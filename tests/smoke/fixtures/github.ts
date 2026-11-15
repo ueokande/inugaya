@@ -1,6 +1,17 @@
 const sha = "a".repeat(40);
 const workflow =
   "jobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n";
+const lockSha = "b".repeat(40);
+const lockfile = `version: v0.0.3
+workflows:
+  .github/workflows/ci.yml: [actions/checkout@v6]
+dependencies:
+  actions/checkout@v6:
+    ref: v6
+    commit: sha1-${sha}
+    owner_id: 44036562
+    repo_id: 197814629
+`;
 globalThis.fetch = async (input, init) => {
   const url = new URL(String(input));
   if (url.origin !== "https://api.github.com") {
@@ -32,14 +43,21 @@ globalThis.fetch = async (input, init) => {
       truncated: false,
       tree: [
         { path: ".github/workflows/ci.yml", mode: "100644", type: "blob", sha },
+        {
+          path: ".github/workflows/actions.lock",
+          mode: "100644",
+          type: "blob",
+          sha: lockSha,
+        },
       ],
     });
   }
   if (path.startsWith("/repos/fixture/target/git/blobs/")) {
+    const source = path.endsWith(lockSha) ? lockfile : workflow;
     return Response.json({
       encoding: "base64",
-      content: Buffer.from(workflow).toString("base64"),
-      size: Buffer.byteLength(workflow),
+      content: Buffer.from(source).toString("base64"),
+      size: Buffer.byteLength(source),
     });
   }
   if (path === "/repos/fixture/target/branches/main/protection") {

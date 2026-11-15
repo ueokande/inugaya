@@ -18,6 +18,7 @@ targets:
   repos: [fixture/target]
 rules:
   actions/full-sha: {}
+  actions/lockfile: {}
   repository/required-reviews:
     parameters: {minimum: 2}
 reporters:
@@ -70,6 +71,12 @@ reporters:
     );
     assert.equal(report.run.status, "complete");
     assert.equal(report.findings.length, 2);
+    assert.equal(
+      report.evaluations.find(
+        (item: { rule: string }) => item.rule === "actions/lockfile",
+      )?.status,
+      "pass",
+    );
     assert.equal(report.resources[0].metadata.scannedCommit, "a".repeat(40));
     assert.match(outputs, /violation-count/);
     assert.match(outputs, /complete/);

@@ -28,6 +28,8 @@ rules:
   actions/full-sha:
     enabled: true
     severity: high
+  actions/lockfile:
+    enabled: true
   repository/required-reviews:
     severity: medium
     parameters:

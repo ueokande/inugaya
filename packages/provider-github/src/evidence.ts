@@ -1,4 +1,5 @@
 import { FatalError } from "@kypa/sdk";
+import { parseDocument } from "yaml";
 import { z } from "zod";
 import { ApiError, type GitHubClient } from "./client.js";
 import { EvidenceError } from "./errors.js";
@@ -143,5 +144,62 @@ export async function collectClassicProtection(
       );
     }
     return { minimum: 0 };
+  }
+}
+
+export async function collectActionLockfile(
+  api: GitHubClient,
+  snapshot: { repository: string; commit: string; tree: string },
+  signal?: AbortSignal,
+): Promise<{ lockfile: unknown }> {
+  const base = repositoryPath(snapshot.repository);
+  const tree = treeSchema.parse(
+    await api.get(`${base}/git/trees/${snapshot.tree}?recursive=1`, signal),
+  );
+  if (tree.truncated) {
+    throw new EvidenceError(
+      "TRUNCATED_TREE",
+      "The repository tree is truncated; lockfile presence cannot be established.",
+    );
+  }
+  const entry = tree.tree.find(
+    (item) => item.path === ".github/workflows/actions.lock",
+  );
+  if (!entry) return { lockfile: null };
+  if (entry.type !== "blob" || !["100644", "100755"].includes(entry.mode)) {
+    throw new EvidenceError(
+      "UNSUPPORTED_FILE",
+      "The Actions lockfile must be a regular file.",
+    );
+  }
+  const blob = blobSchema.parse(
+    await api.get(`${base}/git/blobs/${entry.sha}`, signal),
+  );
+  if (blob.size > 1_048_576) {
+    throw new EvidenceError(
+      "FILE_TOO_LARGE",
+      "The Actions lockfile exceeds the 1 MiB collection limit.",
+    );
+  }
+  const doc = parseDocument(
+    Buffer.from(blob.content, "base64").toString("utf8"),
+    { uniqueKeys: true },
+  );
+  if (doc.errors.length) {
+    throw new EvidenceError(
+      "INVALID_LOCKFILE",
+      "Invalid Actions lockfile YAML. Check syntax and duplicate keys.",
+    );
+  }
+  try {
+    const lockfile: unknown = doc.toJS({ maxAliasCount: 50 });
+    // An empty file is invalid evidence, not an absent lockfile.
+    if (lockfile === null || lockfile === undefined) throw new Error();
+    return { lockfile };
+  } catch {
+    throw new EvidenceError(
+      "INVALID_LOCKFILE",
+      "The Actions lockfile is empty or its YAML aliases could not be resolved.",
+    );
   }
 }

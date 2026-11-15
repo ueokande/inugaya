@@ -26,6 +26,29 @@ The rule does not recursively fetch remote actions or inspect their transitive d
 
 Central policy ignores target suppression comments. Workflow lockfiles do not satisfy a textual full-SHA requirement.
 
+## `actions/lockfile`
+
+| Property         | Contract                                                           |
+| ---------------- | ------------------------------------------------------------------ |
+| Version          | Implementation rule version `1.0.0`; no Action release exists yet. |
+| Resource type    | `github/repository`                                                |
+| Default severity | `high`                                                             |
+| Parameters       | None                                                               |
+| Required access  | Contents read for default-branch files.                            |
+
+```yaml
+rules:
+  actions/lockfile: {}
+```
+
+Require remote workflow Actions to be covered by the native GitHub Actions dependency lockfile at `.github/workflows/actions.lock`, collected at the same default-branch commit as the workflows. This rule supports the `v0.0.3` format on github.com. Maintain it with the official [gh actions-lock](https://github.com/github/gh-actions-lock) extension; review and commit the lockfile together with workflow changes.
+
+A missing lockfile fails even when `uses` contains a full SHA. Each Action must be listed for its workflow and have a dependency entry containing a SHA-1 commit digest, positive owner/repository IDs, and a matching tag or branch ref. Sub-action paths resolve to their repository pin; owner/repository case is ignored while tag and branch case is preserved. A full-SHA `uses` can also match a tag-keyed entry recording that commit. All transitive dependencies declared by `uses` in the lockfile must have entries and be included in the workflow's flat dependency list. Missing coverage produces findings at the original workflow references. Invalid YAML, duplicate keys, unsupported versions or hosts, malformed entries, unreadable files, and incomplete repository trees produce errors, not passes.
+
+This is an offline coverage and recorded-graph check. It does not fetch remote manifests to discover omitted transitive dependencies, authenticate repository IDs, verify commit existence or upstream provenance, or prove that native enforcement ran. Use `gh actions-lock --verify` and GitHub's runtime validation for those guarantees. Remote reusable workflows, standalone local composite Action manifests, local `./` and `$/` references, and Docker images are outside this rule's coverage. No relevant remote workflow Actions yields `not-applicable`.
+
+Select this rule independently of `actions/full-sha`. A locked tag can pass `actions/lockfile` while failing `actions/full-sha`; enabling both requires both policies to hold.
+
 ## `repository/required-reviews`
 
 | Property         | Contract                                                                                                                                    |
