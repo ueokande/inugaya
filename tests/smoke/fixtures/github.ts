@@ -1,4 +1,5 @@
 const sha = "a".repeat(40);
+const migration = process.env.KYPA_FIXTURE_PINNING;
 const workflow =
   "jobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n";
 const lockSha = "b".repeat(40);
@@ -43,17 +44,25 @@ globalThis.fetch = async (input, init) => {
       truncated: false,
       tree: [
         { path: ".github/workflows/ci.yml", mode: "100644", type: "blob", sha },
-        {
-          path: ".github/workflows/actions.lock",
-          mode: "100644",
-          type: "blob",
-          sha: lockSha,
-        },
+        ...(migration
+          ? []
+          : [
+              {
+                path: ".github/workflows/actions.lock",
+                mode: "100644",
+                type: "blob",
+                sha: lockSha,
+              },
+            ]),
       ],
     });
   }
   if (path.startsWith("/repos/fixture/target/git/blobs/")) {
-    const source = path.endsWith(lockSha) ? lockfile : workflow;
+    const source = path.endsWith(lockSha)
+      ? lockfile
+      : migration === "warning"
+        ? workflow.replace("@v6", `@${sha}`)
+        : workflow;
     return Response.json({
       encoding: "base64",
       content: Buffer.from(source).toString("base64"),

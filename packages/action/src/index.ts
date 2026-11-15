@@ -8,6 +8,7 @@ import { jsonReporter } from "@kypa/reporter-json";
 import { builtInRules } from "@kypa/rules-github";
 import {
   FatalError,
+  findingCounts,
   formatFailure,
   formatReportError,
   type Policy,
@@ -95,13 +96,15 @@ export async function run(
       loaded.digest,
       token,
     );
+    const counts = findingCounts(report);
     toolkit.setOutput("run-id", report.run.id);
     toolkit.setOutput("status", report.run.status);
-    toolkit.setOutput("violation-count", report.findings.length);
+    toolkit.setOutput("violation-count", counts.violations);
+    toolkit.setOutput("warning-count", counts.warnings);
     toolkit.setOutput("error-count", report.errors.length);
     toolkit.summary.addHeading("Kypa scan");
     toolkit.summary.addRaw(
-      `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${report.findings.length}; errors: ${report.errors.length}\n`,
+      `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${counts.violations}; warnings: ${counts.warnings}; errors: ${report.errors.length}\n`,
     );
     for (const error of report.errors) {
       toolkit.warning(formatReportError(error));

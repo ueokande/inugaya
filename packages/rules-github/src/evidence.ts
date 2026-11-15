@@ -10,3 +10,6 @@ export const actionReferences = z.object({
     }),
   ),
 });
+
+export const isFullSha = (reference: string): boolean =>
+  /@[a-fA-F0-9]{40}$/.test(reference);

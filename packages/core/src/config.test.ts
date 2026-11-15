@@ -206,3 +206,31 @@ test("existing output errors identify the affected reporter without printing its
   );
   expect(message).not.toContain("private-token");
 });
+
+test("rule level defaults to error; warn is independent of severity; off and enabled false disable", () => {
+  expect(parsePolicy(source, [rule]).rules[0]?.level).toBe("error");
+  const text = source.replace(
+    "test/rule: {}",
+    "test/rule: {level: warn, severity: critical}",
+  );
+  expect(parsePolicy(text, [rule]).rules[0]).toMatchObject({
+    level: "warn",
+    severity: "critical",
+  });
+  for (const setting of ["{level: off}", "{enabled: false, level: warn}"]) {
+    expect(() =>
+      parsePolicy(source.replace("test/rule: {}", `test/rule: ${setting}`), [
+        rule,
+      ]),
+    ).toThrow("At least one enabled");
+  }
+  const off = text.replace("rules:\n", "rules:\n  disabled: {level: off}\n");
+  expect(
+    parsePolicy(off, [rule, { ...rule, id: "disabled" }]).rules,
+  ).toHaveLength(1);
+  const invalid = source.replace(
+    "test/rule: {}",
+    "test/rule: {level: warning}",
+  );
+  expect(() => parsePolicy(invalid, [rule])).toThrow("Policy fields");
+});

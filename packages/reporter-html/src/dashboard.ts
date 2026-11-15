@@ -1,4 +1,4 @@
-import type { Report } from "@kypa/sdk";
+import { findingCounts, type Report } from "@kypa/sdk";
 import "./style.css";
 
 function element<K extends keyof HTMLElementTagNameMap>(
@@ -24,9 +24,10 @@ function select(label: string, values: string[]): HTMLSelectElement {
 }
 
 export function renderReport(report: Report): void {
-  if (report.schemaVersion !== 1) {
+  if (report.schemaVersion !== 2) {
     throw new Error("Unsupported report format.");
   }
+  const counts = findingCounts(report);
   const main = element("main");
   document.body.replaceChildren(main);
   main.append(
@@ -52,7 +53,7 @@ export function renderReport(report: Report): void {
   main.append(
     element(
       "p",
-      `${report.scope.discovered} resources · ${report.scope.evaluated} processed · ${report.findings.length} violations · ${report.errors.length} errors`,
+      `${report.scope.discovered} resources · ${report.scope.evaluated} processed · ${counts.violations} violations · ${counts.warnings} warnings · ${report.errors.length} scan errors`,
     ),
   );
   main.append(
@@ -103,6 +104,7 @@ export function renderReport(report: Report): void {
     "high",
     "critical",
   ]);
+  const level = select("Level", ["warn", "error"]);
   const results = element("section");
   main.append(results);
   const names = new Map(
@@ -120,7 +122,8 @@ export function renderReport(report: Report): void {
         (!resource.value || resource.value === name) &&
         (!rule.value || rule.value === item.rule) &&
         (!severity.value || severity.value === item.severity) &&
-        `${name} ${item.rule} ${item.status}`
+        (!level.value || level.value === item.level) &&
+        `${name} ${item.rule} ${item.status} ${item.level}`
           .toLowerCase()
           .includes(search.value.toLowerCase())
       );
@@ -136,7 +139,10 @@ export function renderReport(report: Report): void {
           "h3",
           `${names.get(evaluation.resource) ?? evaluation.resource} · ${evaluation.rule}`,
         ),
-        element("p", `${evaluation.status} · ${evaluation.severity}`),
+        element(
+          "p",
+          `${evaluation.status} · ${evaluation.level} · ${evaluation.severity}`,
+        ),
       );
       for (const id of evaluation.findingIds) {
         const finding = findings.get(id);
@@ -163,7 +169,7 @@ export function renderReport(report: Report): void {
     }
   };
 
-  for (const control of [search, resource, rule, severity]) {
+  for (const control of [search, resource, rule, severity, level]) {
     control.addEventListener("input", update);
   }
   update();

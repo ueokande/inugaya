@@ -15,6 +15,7 @@ const pattern = z
 const options = z
   .object({
     enabled: z.boolean().default(true),
+    level: z.enum(["off", "warn", "error"]).default("error"),
     severity: z.enum(severities).optional(),
     parameters: z.unknown().optional(),
   })
@@ -137,9 +138,10 @@ export function parsePolicy(text: string, rules: readonly Rule[]): Policy {
             ],
       );
     }
-    if (setting.enabled) {
+    if (setting.enabled && setting.level !== "off") {
       selected.push({
         id,
+        level: setting.level,
         severity: setting.severity ?? rule.defaultSeverity,
         parameters,
       });
@@ -147,7 +149,7 @@ export function parsePolicy(text: string, rules: readonly Rule[]): Policy {
   }
   if (!selected.length) {
     throw new FatalError("CONFIG", "At least one enabled rule is required.", [
-      "rules: Select at least one rule with enabled: true (the default).",
+      "rules: Select at least one rule with enabled: true and level: warn or error (the defaults are enabled: true and level: error).",
     ]);
   }
   return { ...parsed.data, rules: selected };

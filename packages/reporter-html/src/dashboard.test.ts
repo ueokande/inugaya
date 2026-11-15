@@ -19,7 +19,7 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
     metadata: {},
   };
   const report: Report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     run: {
       id: "fixture",
       startedAt: "2026-01-01T00:00:00Z",
@@ -49,6 +49,7 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
         rule: "test/rule",
         ruleVersion: "1",
         severity: "high",
+        level: "error",
         status: "fail",
         findingIds: ["1"],
         evidence: [],
@@ -62,6 +63,7 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
         rule: "test/rule",
         ruleVersion: "1",
         severity: "high",
+        level: "error",
         message: "<script>alert(1)</script>",
         remediation: "Fix",
         location: { path: "file", line: 1, url: "javascript:alert(1)" },
@@ -70,11 +72,42 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
     errors: [{ phase: "collection", code: "ACCESS", message: "No access" }],
     warnings: [],
   };
+  const warning = report.findings[0];
+  const evaluation = report.evaluations[0];
+  if (!warning || !evaluation) throw new Error("Missing fixture");
+  report.findings.push({
+    ...warning,
+    id: "2",
+    rule: "test/warning",
+    level: "warn",
+  });
+  report.evaluations.push({
+    ...evaluation,
+    rule: "test/warning",
+    level: "warn",
+    findingIds: ["2"],
+  });
+  expect(() =>
+    renderReport({ ...report, schemaVersion: 1 } as unknown as Report),
+  ).toThrow("Unsupported report format");
   renderReport(report);
   expect(document.body.textContent).toContain("Missing coverage");
   expect(document.body.textContent).toContain("<script>alert(1)</script>");
   expect(document.querySelectorAll("script,img")).toHaveLength(0);
   expect(document.querySelector("a")?.hasAttribute("href")).toBe(false);
+  expect(document.body.textContent).toContain(
+    "1 violations · 1 warnings · 1 scan errors",
+  );
+  const level = [...document.querySelectorAll("label")]
+    .find((label) => label.firstChild?.textContent === "Level")
+    ?.querySelector("select");
+  if (!level) throw new Error("Level filter missing");
+  level.value = "warn";
+  level.dispatchEvent(new dom.window.Event("input"));
+  expect(document.querySelectorAll("article")).toHaveLength(1);
+  expect(document.querySelector("article")?.textContent).toContain(
+    "fail · warn · high",
+  );
   const search = document.querySelector("input");
   if (!search) {
     throw new Error("Search missing");

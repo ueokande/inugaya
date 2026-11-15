@@ -21,11 +21,14 @@ for (const scenario of [
   "fatal",
   "invalid",
   "discovery",
+  "warning",
+  "unpinned",
 ]) {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), "kypa-cli-smoke-"),
   );
   try {
+    const migration = scenario === "warning" || scenario === "unpinned";
     const config = path.join(directory, "policy.yaml");
     await fsPromises.writeFile(
       config,
@@ -33,10 +36,15 @@ for (const scenario of [
 targets:
   ${scenario === "discovery" ? "orgs: [fixture-user]" : "repos: [fixture/target]"}
 rules:
-  actions/full-sha: {}
+  ${
+    migration
+      ? `actions/pinned-dependencies: {level: error}
+  actions/lockfile: {level: warn}`
+      : `actions/full-sha: {}
   actions/lockfile: {}
   repository/required-reviews:
-    parameters: {minimum: 2}
+    parameters: {minimum: 2}`
+  }
 reporters:
   - name: json
     options: {path: report/report.json}
@@ -53,7 +61,7 @@ reporters:
         "--config",
         config,
         "--fail-on",
-        scenario === "violation"
+        scenario === "violation" || migration
           ? "violation"
           : scenario === "discovery"
             ? "error"
@@ -63,14 +71,19 @@ reporters:
         cwd: root,
         encoding: "utf8",
         timeout: 30_000,
-        env: { GH_TOKEN: scenario === "fatal" ? "" : "fixture-token" },
+        env: {
+          GH_TOKEN: scenario === "fatal" ? "" : "fixture-token",
+          KYPA_FIXTURE_PINNING: migration ? scenario : "",
+        },
       },
     );
     assert.equal(
       child.status,
-      scenario === "report"
+      scenario === "report" || scenario === "warning"
         ? 0
-        : scenario === "violation" || scenario === "discovery"
+        : scenario === "violation" ||
+            scenario === "discovery" ||
+            scenario === "unpinned"
           ? 1
           : 2,
       child.stderr + child.stdout,
@@ -106,14 +119,24 @@ reporters:
       continue;
     }
     assert.equal(report.run.status, "complete");
-    assert.equal(report.findings.length, 2);
+    assert.equal(report.findings.length, scenario === "warning" ? 1 : 2);
+    assert.equal(
+      report.findings.filter((item: { level: string }) => item.level === "warn")
+        .length,
+      migration ? 1 : 0,
+    );
     assert.equal(
       report.evaluations.find(
         (item: { rule: string }) => item.rule === "actions/lockfile",
       )?.status,
-      "pass",
+      migration ? "fail" : "pass",
     );
-    assert.match(child.stdout, /violations: 2/);
+    assert.match(
+      child.stdout,
+      new RegExp(
+        `violations: ${scenario === "warning" ? 0 : scenario === "unpinned" ? 1 : 2}; warnings: ${migration ? 1 : 0}`,
+      ),
+    );
     assert.match(
       await fsPromises.readFile(
         path.join(directory, "site/index.html"),

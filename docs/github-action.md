@@ -26,7 +26,8 @@ After successful report generation, proposed outputs are:
 | ----------------- | --------------------------------------------------- |
 | `run-id`          | Identity of this scan.                              |
 | `status`          | `complete` or `partial`, independent of compliance. |
-| `violation-count` | Number of findings.                                 |
+| `violation-count` | Number of error-level findings.                     |
+| `warning-count`   | Number of warn-level findings.                      |
 | `error-count`     | Discovery, collection, and evaluation errors.       |
 
 The Action also writes an aggregate job summary. Do not assume outputs exist after a fatal failure.
@@ -109,11 +110,11 @@ A fatal scan or failed deployment leaves the previous Pages result in place. Its
 
 The `fail-on` input controls failure after report generation:
 
-| Value       | Behavior                                                                                     |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| `never`     | Succeed after report generation, including violations and partial coverage.                  |
-| `violation` | Fail for any finding or discovery, collection, or evaluation error.                          |
-| `error`     | Fail for discovery, collection, or evaluation errors; violations alone do not fail the step. |
+| Value       | Behavior                                                                                                             |
+| ----------- | -------------------------------------------------------------------------------------------------------------------- |
+| `never`     | Succeed after report generation, including violations and partial coverage.                                          |
+| `violation` | Fail for error-level findings or discovery, collection, or evaluation errors. Warn-level findings alone do not fail. |
+| `error`     | Fail for discovery, collection, or evaluation errors; violations alone do not fail the step.                         |
 
 The runner returns structured outcomes rather than CLI exit codes. The Action marks the step as failed when a generated report triggers the selected failure policy or a fatal configuration, authentication, or output error occurs. Fatal failures always fail the Action regardless of `fail-on`.
 

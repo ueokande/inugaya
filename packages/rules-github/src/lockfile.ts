@@ -56,11 +56,7 @@ export const actionsLockfile: Rule = {
     // or standalone composite manifests in the scanned repository.
     const refs = actionReferences
       .parse(references.data)
-      .references.filter(
-        (ref) =>
-          /^\.github\/workflows\/[^/]+\.ya?ml$/.test(ref.path) &&
-          !/^[^/]+\/[^/]+\/\.github\/workflows\//.test(ref.reference),
-      );
+      .references.filter(isLockfileReference);
     if (!refs.length) return { applicable: false, findings: [] };
     const { lockfile } = z
       .object({ lockfile: z.unknown().nonoptional().nullable() })
@@ -79,53 +75,9 @@ export const actionsLockfile: Rule = {
         ],
       };
     }
-    const lock = lockSchema.parse(lockfile);
-    const entries = new Map(
-      Object.entries(lock.dependencies).map(([key, value]) => [
-        identity(key),
-        value,
-      ]),
-    );
-    if (entries.size !== Object.keys(lock.dependencies).length)
-      throw new Error("Duplicate canonical lockfile pins.");
+    const covered = lockfileCoverage(lockfile);
     const findings = refs
-      .filter((ref) => {
-        const listed = lock.workflows[ref.path] ?? [];
-        const roots = listed.filter((key) => {
-          if (identity(key) === identity(ref.reference)) return true;
-          const entry = entries.get(identity(key));
-          return (
-            entry !== undefined &&
-            identity(`${key.split("@")[0]}@${entry.commit.slice(5)}`) ===
-              identity(ref.reference)
-          );
-        });
-        if (!roots.length) return true;
-        const covered = new Set(listed.map(identity));
-        const visited = new Set<string>();
-        const pending = [...roots];
-        while (pending.length) {
-          const key = identity(pending.pop() as string);
-          if (visited.has(key)) continue;
-          visited.add(key);
-          const entry = entries.get(key);
-          if (!entry || !covered.has(key)) return true;
-          const keyRef = key.slice(key.indexOf("@") + 1);
-          if (
-            /^[a-f0-9]{40}$/.test(keyRef)
-              ? entry.commit !== `sha1-${keyRef}`
-              : entry.ref !== keyRef
-          )
-            return true;
-          if (
-            /^[a-fA-F0-9]{40}$/.test(entry.ref) ||
-            entry.ref.startsWith("refs/")
-          )
-            return true;
-          pending.push(...(entry.uses ?? []));
-        }
-        return false;
-      })
+      .filter((ref) => !covered(ref))
       .map((ref) => ({
         key: JSON.stringify([ref.path, ref.line, ref.reference]),
         message:
@@ -136,3 +88,63 @@ export const actionsLockfile: Rule = {
     return { applicable: true, findings };
   },
 };
+
+export function isLockfileReference(ref: {
+  path: string;
+  reference: string;
+}): boolean {
+  return (
+    /^\.github\/workflows\/[^/]+\.ya?ml$/.test(ref.path) &&
+    !/^[^/]+\/[^/]+\/\.github\/workflows\//.test(ref.reference)
+  );
+}
+
+// Validate once, then reuse the same recorded-graph coverage check in both rules.
+export function lockfileCoverage(
+  lockfile: unknown,
+): (ref: { path: string; reference: string }) => boolean {
+  if (lockfile === null) return () => false;
+  const lock = lockSchema.parse(lockfile);
+  const entries = new Map(
+    Object.entries(lock.dependencies).map(([key, value]) => [
+      identity(key),
+      value,
+    ]),
+  );
+  if (entries.size !== Object.keys(lock.dependencies).length)
+    throw new Error("Duplicate canonical lockfile pins.");
+  return (ref) => {
+    const listed = lock.workflows[ref.path] ?? [];
+    const roots = listed.filter((key) => {
+      if (identity(key) === identity(ref.reference)) return true;
+      const entry = entries.get(identity(key));
+      return (
+        entry !== undefined &&
+        identity(`${key.split("@")[0]}@${entry.commit.slice(5)}`) ===
+          identity(ref.reference)
+      );
+    });
+    if (!roots.length) return false;
+    const covered = new Set(listed.map(identity));
+    const visited = new Set<string>();
+    const pending = [...roots];
+    while (pending.length) {
+      const key = identity(pending.pop() as string);
+      if (visited.has(key)) continue;
+      visited.add(key);
+      const entry = entries.get(key);
+      if (!entry || !covered.has(key)) return false;
+      const keyRef = key.slice(key.indexOf("@") + 1);
+      if (
+        /^[a-f0-9]{40}$/.test(keyRef)
+          ? entry.commit !== `sha1-${keyRef}`
+          : entry.ref !== keyRef
+      )
+        return false;
+      if (/^[a-fA-F0-9]{40}$/.test(entry.ref) || entry.ref.startsWith("refs/"))
+        return false;
+      pending.push(...(entry.uses ?? []));
+    }
+    return true;
+  };
+}

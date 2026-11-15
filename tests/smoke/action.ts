@@ -6,21 +6,33 @@ import * as path from "node:path";
 import * as url from "node:url";
 
 const root = url.fileURLToPath(new URL("../../", import.meta.url));
-for (const scenario of ["report", "violation", "fatal"]) {
+for (const scenario of [
+  "report",
+  "violation",
+  "fatal",
+  "warning",
+  "unpinned",
+]) {
   const directory = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), "kypa-action-smoke-"),
   );
   try {
+    const migration = scenario === "warning" || scenario === "unpinned";
     await fsPromises.writeFile(
       path.join(directory, "kypa.yaml"),
       `version: 1
 targets:
   repos: [fixture/target]
 rules:
-  actions/full-sha: {}
+  ${
+    migration
+      ? `actions/pinned-dependencies: {level: error}
+  actions/lockfile: {level: warn}`
+      : `actions/full-sha: {}
   actions/lockfile: {}
   repository/required-reviews:
-    parameters: {minimum: 2}
+    parameters: {minimum: 2}`
+  }
 reporters:
   - name: json
     options: {path: report/report.json}
@@ -46,8 +58,10 @@ reporters:
         env: {
           PATH: process.env.PATH ?? "",
           INPUT_TOKEN: scenario === "fatal" ? "" : "fixture-token",
+          KYPA_FIXTURE_PINNING: migration ? scenario : "",
           INPUT_CONFIG: "kypa.yaml",
-          "INPUT_FAIL-ON": scenario === "violation" ? "violation" : "never",
+          "INPUT_FAIL-ON":
+            scenario === "violation" || migration ? "violation" : "never",
           GITHUB_OUTPUT: output,
           GITHUB_STEP_SUMMARY: summary,
         },
@@ -55,7 +69,7 @@ reporters:
     );
     assert.equal(
       child.status,
-      scenario === "report" ? 0 : 1,
+      scenario === "report" || scenario === "warning" ? 0 : 1,
       child.stderr + child.stdout,
     );
     const outputs = await fsPromises.readFile(output, "utf8");
@@ -70,15 +84,27 @@ reporters:
       ),
     );
     assert.equal(report.run.status, "complete");
-    assert.equal(report.findings.length, 2);
+    assert.equal(report.findings.length, scenario === "warning" ? 1 : 2);
+    assert.equal(
+      report.findings.filter((item: { level: string }) => item.level === "warn")
+        .length,
+      migration ? 1 : 0,
+    );
     assert.equal(
       report.evaluations.find(
         (item: { rule: string }) => item.rule === "actions/lockfile",
       )?.status,
-      "pass",
+      migration ? "fail" : "pass",
     );
     assert.equal(report.resources[0].metadata.scannedCommit, "a".repeat(40));
-    assert.match(outputs, /violation-count/);
+    assert.equal(
+      outputs.match(/violation-count<<[^\n]+\n([0-9]+)\n/)?.[1],
+      String(scenario === "warning" ? 0 : scenario === "unpinned" ? 1 : 2),
+    );
+    assert.equal(
+      outputs.match(/warning-count<<[^\n]+\n([0-9]+)\n/)?.[1],
+      String(migration ? 1 : 0),
+    );
     assert.match(outputs, /complete/);
     assert.match(await fsPromises.readFile(summary, "utf8"), /Kypa scan/);
     const html = await fsPromises.readFile(

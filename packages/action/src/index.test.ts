@@ -3,10 +3,10 @@ import { expect, test, vi } from "vitest";
 import { run, type Toolkit } from "./index.js";
 
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   run: { id: "fixture", status: "partial" },
   scope: { evaluated: 1 },
-  findings: [{}],
+  findings: [{ level: "error" }],
   errors: [
     {
       phase: "discovery",

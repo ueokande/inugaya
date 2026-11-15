@@ -5,7 +5,7 @@ import { type CliDependencies, run } from "./index.js";
 const report = {
   run: { status: "partial" },
   scope: { evaluated: 1 },
-  findings: [{}],
+  findings: [{ level: "error" }],
   errors: [
     {
       phase: "discovery",

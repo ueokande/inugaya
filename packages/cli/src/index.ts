@@ -7,6 +7,7 @@ import { createHtmlReporter } from "@kypa/reporter-html";
 import { jsonReporter } from "@kypa/reporter-json";
 import { builtInRules } from "@kypa/rules-github";
 import {
+  findingCounts,
   formatFailure,
   formatReportError,
   type Policy,
@@ -114,8 +115,9 @@ export async function run(
       token,
       signal,
     );
+    const counts = findingCounts(report);
     dependencies.stdout(
-      `Status: ${report.run.status}\nResources: ${report.scope.evaluated}; violations: ${report.findings.length}; errors: ${report.errors.length}`,
+      `Status: ${report.run.status}\nResources: ${report.scope.evaluated}; violations: ${counts.violations}; warnings: ${counts.warnings}; errors: ${report.errors.length}`,
     );
     for (const error of report.errors) {
       dependencies.stderr(formatReportError(error).replaceAll(token, "***"));
