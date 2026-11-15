@@ -5,6 +5,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as url from "node:url";
 
+import { policyFile } from "../helpers/github-repository.ts";
+
 const root = url.fileURLToPath(new URL("../../", import.meta.url));
 for (const scenario of [
   "report",
@@ -18,28 +20,11 @@ for (const scenario of [
   );
   try {
     const migration = scenario === "warning" || scenario === "unpinned";
-    await fsPromises.writeFile(
+    await fsPromises.copyFile(
+      policyFile(migration ? "migration" : "smoke"),
       path.join(directory, "kypa.yaml"),
-      `version: 1
-targets:
-  repos: [fixture/target]
-rules:
-  ${
-    migration
-      ? `actions/pinned-dependencies: {level: error}
-  actions/lockfile: {level: warn}`
-      : `actions/full-sha: {}
-  actions/lockfile: {}
-  repository/required-reviews:
-    parameters: {minimum: 2}`
-  }
-reporters:
-  - name: json
-    options: {path: report/report.json}
-  - name: html
-    options: {directory: site, basePath: /monitor/}
-`,
     );
+
     const output = path.join(directory, "outputs");
     const summary = path.join(directory, "summary");
     await fsPromises.writeFile(output, "");
@@ -111,7 +96,7 @@ reporters:
       path.join(directory, "site/index.html"),
       "utf8",
     );
-    assert.match(html, /<base href="\/monitor\/">/);
+    assert.match(html, /<base href="\/">/);
     assert.deepEqual(
       JSON.parse(
         await fsPromises.readFile(

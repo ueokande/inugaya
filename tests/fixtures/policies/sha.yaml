@@ -1,0 +1,10 @@
+version: 1
+targets:
+  repos: [fixture/target]
+rules:
+  actions/full-sha: { level: error }
+reporters:
+  - name: json
+    options: { path: report/report.json }
+  - name: html
+    options: { directory: site, basePath: / }

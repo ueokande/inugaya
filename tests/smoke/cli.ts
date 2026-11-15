@@ -5,6 +5,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as url from "node:url";
 
+import { policyFile } from "../helpers/github-repository.ts";
+
 const root = url.fileURLToPath(new URL("../../", import.meta.url));
 const entry = path.join(root, "dist/cli/index.js");
 const help = childProcess.spawnSync(process.execPath, [entry, "--help"], {
@@ -30,28 +32,17 @@ for (const scenario of [
   try {
     const migration = scenario === "warning" || scenario === "unpinned";
     const config = path.join(directory, "policy.yaml");
-    await fsPromises.writeFile(
+    await fsPromises.copyFile(
+      policyFile(
+        migration
+          ? "migration"
+          : scenario === "invalid" || scenario === "discovery"
+            ? scenario
+            : "smoke",
+      ),
       config,
-      `version: 1
-targets:
-  ${scenario === "discovery" ? "orgs: [fixture-user]" : "repos: [fixture/target]"}
-rules:
-  ${
-    migration
-      ? `actions/pinned-dependencies: {level: error}
-  actions/lockfile: {level: warn}`
-      : `actions/full-sha: {}
-  actions/lockfile: {}
-  repository/required-reviews:
-    parameters: {minimum: 2}`
-  }
-reporters:
-  - name: json
-    options: {path: report/report.json}
-  - name: html
-    options: {directory: site, basePath: ${scenario === "invalid" ? "./report" : "/"}}
-`,
     );
+
     const child = childProcess.spawnSync(
       process.execPath,
       [

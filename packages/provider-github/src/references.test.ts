@@ -2,15 +2,18 @@ import * as fs from "node:fs";
 import { expect, test } from "vitest";
 import { collectReferences } from "./references.js";
 
-const fixture = (name: string) =>
+const fixture = (relative: string) =>
   fs.readFileSync(
-    new URL(`../../rules-github/fixtures/${name}.yml`, import.meta.url),
+    new URL(
+      `../../../tests/fixtures/repositories/references/${relative}`,
+      import.meta.url,
+    ),
     "utf8",
   );
 
 test("collects step and reusable workflow references with commit-pinned locations", () => {
   const refs = collectReferences(
-    fixture("workflow"),
+    fixture(".github/workflows/ci.yml"),
     ".github/workflows/ci.yml",
     "org/repo",
     "a".repeat(40),
@@ -29,7 +32,7 @@ test("collects step and reusable workflow references with commit-pinned location
 test("collects composite references but not JavaScript Action manifests", () => {
   expect(
     collectReferences(
-      fixture("composite"),
+      fixture(".github/actions/local/action.yml"),
       "action.yaml",
       "org/repo",
       "a".repeat(40),

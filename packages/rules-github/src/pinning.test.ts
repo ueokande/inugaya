@@ -1,8 +1,6 @@
 import type { Evidence, Resource } from "@kypa/sdk";
-import { findingCounts, shouldFail } from "@kypa/sdk";
-import { expect, test, vi } from "vitest";
-import { parsePolicy, runScan } from "../../core/src/index.js";
-import { builtInRules, pinnedDependencies } from "./index.js";
+import { expect, test } from "vitest";
+import { pinnedDependencies } from "./index.js";
 
 const sha = "a".repeat(40);
 const path = ".github/workflows/ci.yml";
@@ -46,78 +44,6 @@ function evidence(reference: string, lockfile: unknown, source = path) {
     "github/actions-lockfile@1": available({ lockfile }),
   };
 }
-const profiles = {
-  sha: "actions/full-sha: {level: error}",
-  lock: "actions/lockfile: {level: error}",
-  either:
-    "actions/pinned-dependencies: {level: error, parameters: {acceptedMethods: [full-sha, lockfile]}}",
-  migration:
-    "actions/pinned-dependencies: {level: error}\n  actions/lockfile: {level: warn}",
-};
-
-test.each([
-  ["sha", true, false, 0, 0],
-  ["sha", false, true, 1, 0],
-  ["sha", true, true, 0, 0],
-  ["sha", false, false, 1, 0],
-  ["lock", true, false, 1, 0],
-  ["lock", false, true, 0, 0],
-  ["lock", true, true, 0, 0],
-  ["lock", false, false, 1, 0],
-  ["either", true, false, 0, 0],
-  ["either", false, true, 0, 0],
-  ["either", true, true, 0, 0],
-  ["either", false, false, 1, 0],
-  ["migration", true, false, 0, 1],
-  ["migration", false, true, 0, 0],
-  ["migration", true, true, 0, 0],
-  ["migration", false, false, 1, 1],
-] as const)(
-  "%s policy: SHA=%s lockfile=%s yields %i violations and %i warnings",
-  async (profile, hasSha, hasLock, violations, warnings) => {
-    const policy = parsePolicy(
-      `version: 1\ntargets: {repos: [org/repo]}\nrules:\n  ${profiles[profile]}\nreporters: [{name: json, options: {path: report.json}}]`,
-      builtInRules,
-    );
-    const collect = vi.fn(async () =>
-      evidence(`org/action@${hasSha ? sha : "v1"}`, hasLock ? locked : null),
-    );
-    const report = await runScan(policy, {
-      provider: {
-        id: "github",
-        discover: async () => ({
-          resources: [resource],
-          errors: [],
-          excluded: [],
-        }),
-        collect,
-      },
-      rules: builtInRules,
-      reporters: [{ id: "json", write: async () => {} }],
-      policyDirectory: "",
-      policyDigest: "",
-    });
-    expect(findingCounts(report)).toEqual({ violations, warnings });
-    expect(report.errors).toEqual([]);
-    expect(report.run.status).toBe("complete");
-    expect(shouldFail(report, "violation")).toBe(violations > 0);
-    expect(shouldFail(report, "error")).toBe(false);
-    expect(shouldFail(report, "never")).toBe(false);
-    expect(
-      report.evaluations.every(
-        (item) =>
-          item.level ===
-          (item.rule === "actions/lockfile" && profile === "migration"
-            ? "warn"
-            : "error"),
-      ),
-    ).toBe(true);
-    expect(collect).toHaveBeenCalledOnce();
-    const ids = collect.mock.calls[0] as unknown as [Resource, string[]];
-    expect(new Set(ids[1]).size).toBe(ids[1].length);
-  },
-);
-
 test("acceptedMethods defaults and strict validation", () => {
   expect(pinnedDependencies.validateParameters({})).toEqual({
     acceptedMethods: ["full-sha", "lockfile"],
@@ -234,43 +160,6 @@ test("no references or empty repository is not applicable", () => {
       {},
     ).applicable,
   ).toBe(false);
-});
-
-test("runner requests only reference evidence for a SHA-only combined policy", async () => {
-  const policy = parsePolicy(
-    `version: 1
-targets: {repos: [org/repo]}
-rules:
-  actions/pinned-dependencies:
-    parameters: {acceptedMethods: [full-sha]}
-reporters: [{name: json, options: {path: report.json}}]`,
-    builtInRules,
-  );
-  const data = evidence(`org/action@${sha}`, null);
-  const collect = vi.fn(async (_resource: Resource, ids: readonly string[]) => {
-    expect(ids).toEqual(["github/action-references@1"]);
-    return { "github/action-references@1": data["github/action-references@1"] };
-  });
-  const report = await runScan(policy, {
-    provider: {
-      id: "github",
-      discover: async () => ({
-        resources: [resource],
-        errors: [],
-        excluded: [],
-      }),
-      collect,
-    },
-    rules: builtInRules,
-    reporters: [{ id: "json", write: async () => {} }],
-    policyDirectory: "",
-    policyDigest: "",
-  });
-  expect(report.evaluations[0]?.status).toBe("pass");
-  expect(report.errors).toEqual([]);
-  expect(report.evaluations[0]?.evidence.map((item) => item.id)).toEqual([
-    "github/action-references@1",
-  ]);
 });
 
 test("mixed reference protection produces findings only at uncovered uses", () => {

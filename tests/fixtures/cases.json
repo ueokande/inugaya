@@ -1,0 +1,233 @@
+[
+  {
+    "repository": "sha-only",
+    "policy": "sha",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "locked",
+    "policy": "sha",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "both",
+    "policy": "sha",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "unpinned",
+    "policy": "sha",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "sha-only",
+    "policy": "lock",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "locked",
+    "policy": "lock",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "both",
+    "policy": "lock",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "unpinned",
+    "policy": "lock",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "sha-only",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "locked",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "both",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "unpinned",
+    "policy": "either",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "sha-only",
+    "policy": "migration",
+    "violations": 0,
+    "warnings": 1,
+    "errorCodes": []
+  },
+  {
+    "repository": "locked",
+    "policy": "migration",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "both",
+    "policy": "migration",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "unpinned",
+    "policy": "migration",
+    "violations": 1,
+    "warnings": 1,
+    "errorCodes": []
+  },
+  {
+    "repository": "mixed",
+    "policy": "either",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "local-only",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "no-workflows",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "reusable-tag",
+    "policy": "either",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "reusable-sha",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "composite",
+    "policy": "either",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "sub-action",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "stale-lockfile",
+    "policy": "either",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "transitive",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "missing-transitive",
+    "policy": "either",
+    "violations": 1,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "invalid-lockfile",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": ["INVALID_LOCKFILE"]
+  },
+  {
+    "repository": "duplicate-lockfile",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": ["INVALID_LOCKFILE"]
+  },
+  {
+    "repository": "unsupported-lockfile",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": ["EVALUATION"]
+  },
+  {
+    "repository": "invalid-workflow",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": ["INVALID_WORKFLOW"]
+  },
+  {
+    "repository": "invalid-lockfile",
+    "policy": "sha-only",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "duplicate-blobs",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
+  },
+  {
+    "repository": "empty-lockfile",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": ["INVALID_LOCKFILE"]
+  }
+]
