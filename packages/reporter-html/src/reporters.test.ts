@@ -17,7 +17,7 @@ afterEach(async () => {
   );
 });
 const report = {
-  schemaVersion: 2,
+  schemaVersion: 1,
   run: { status: "partial" },
   findings: [],
   errors: [{ message: "<script>alert(1)</script>" }],

@@ -88,6 +88,8 @@ Keep local argument parsing, environment token handling, output, and exit codes 
 
 Separate evaluations from findings. Support `pass`, `fail`, `not-applicable`, and `error`; zero findings does not prove success. Errors are never passes. Preserve findings without suppression. Central policy cannot be overridden by target configuration or suppression comments.
 
+The JSON report contract is experimental. Keep `schemaVersion: 1` during development; do not increment it for report field or semantic changes until a stable compatibility contract is deliberately adopted. Update the producer, dashboard, tests, and documentation together. Do not promise compatibility with older development reports; generate reports and dashboard assets from the same revision.
+
 Include run identity, timestamps, tool/policy/rule versions, generic resource identity, scanned commit, safe errors, and coverage. Link file locations to the scanned commit. API evidence is observed at collection time and does not form an atomic snapshot with Git evidence. Discovery cannot guarantee visibility of inaccessible repositories.
 
 Violations must not prevent report generation or publication. Fatal configuration, authentication, and output errors prevent publication; keep the previous deployment. Partial reports must clearly show missing coverage. Display freshness prominently.

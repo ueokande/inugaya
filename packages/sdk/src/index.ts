@@ -125,7 +125,7 @@ export interface Evaluation {
 }
 
 export interface Report {
-  schemaVersion: 2;
+  schemaVersion: 1;
   run: {
     id: string;
     startedAt: string;

@@ -25,7 +25,7 @@ File locations link to the resolved scanned commit. API evidence has its own col
 
 ## JSON report
 
-The unreleased JSON report uses `schemaVersion: 2` and these top-level fields:
+The unreleased JSON report uses `schemaVersion: 1` and these top-level fields:
 
 | Field           | Intended content                                                                           |
 | --------------- | ------------------------------------------------------------------------------------------ |
@@ -40,7 +40,7 @@ The unreleased JSON report uses `schemaVersion: 2` and these top-level fields:
 
 Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The TypeScript Report interface in packages/sdk/src/index.ts defines the current field-level format. There is no separately published JSON Schema or supported external SDK.
 
-Version 2 requires enforcement levels on findings and evaluations; the dashboard rejects version 1 reports rather than misclassifying their counts. Regenerate older reports with the current implementation.
+The JSON report is experimental. Keep `schemaVersion: 1` while its contract is under development; fields and semantics may change without a schema-version increment. No compatibility with reports from older development revisions is promised. Generate reports and dashboard assets from the same revision, and regenerate older reports after updating. The report records `run.toolVersion`; use the source commit when identifying an unreleased development revision.
 
 Consumers must check supported schema versions, completeness, and evaluation outcomes before interpreting finding counts. Reports must not contain secrets, raw API payloads, or unnecessary source content. Messages and locations may still reveal internal repository names and policy posture; restrict report access.
 

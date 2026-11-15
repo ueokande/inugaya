@@ -24,7 +24,7 @@ function select(label: string, values: string[]): HTMLSelectElement {
 }
 
 export function renderReport(report: Report): void {
-  if (report.schemaVersion !== 2) {
+  if (report.schemaVersion !== 1) {
     throw new Error("Unsupported report format.");
   }
   const counts = findingCounts(report);

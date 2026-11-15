@@ -59,7 +59,7 @@ export async function runScan(
     ]);
   }
   const report: Report = {
-    schemaVersion: 2,
+    schemaVersion: 1,
     run: {
       id: (dependencies.runId ?? crypto.randomUUID)(),
       startedAt,

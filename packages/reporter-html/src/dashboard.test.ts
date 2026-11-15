@@ -19,7 +19,7 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
     metadata: {},
   };
   const report: Report = {
-    schemaVersion: 2,
+    schemaVersion: 1,
     run: {
       id: "fixture",
       startedAt: "2026-01-01T00:00:00Z",
@@ -88,7 +88,7 @@ test("renders partial coverage, escapes untrusted values, and filters evaluation
     findingIds: ["2"],
   });
   expect(() =>
-    renderReport({ ...report, schemaVersion: 1 } as unknown as Report),
+    renderReport({ ...report, schemaVersion: 999 } as unknown as Report),
   ).toThrow("Unsupported report format");
   renderReport(report);
   expect(document.body.textContent).toContain("Missing coverage");
