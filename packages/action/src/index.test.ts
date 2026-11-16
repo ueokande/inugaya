@@ -73,12 +73,7 @@ test("fatal failure is redacted, emits no report outputs, and never gets masked 
   );
 });
 
-test("invalid input and unusable authentication fail before collection", async () => {
-  const core = toolkit("unknown");
-  const scan = vi.fn(async () => report);
-  await run(core, { load, scan });
-  expect(scan).not.toHaveBeenCalled();
-  expect(core.setFailed).toHaveBeenCalled();
+test("unusable authentication is reported as a fatal failure", async () => {
   const fatal = toolkit();
   await run(fatal, {
     load,
@@ -117,7 +112,9 @@ test("missing token and invalid failure policy have actionable input diagnostics
     expect.stringContaining("token input is empty"),
   );
   const invalid = toolkit("unsupported");
-  await run(invalid, { load, scan: vi.fn(async () => report) });
+  const scan = vi.fn(async () => report);
+  await run(invalid, { load, scan });
+  expect(scan).not.toHaveBeenCalled();
   expect(invalid.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("fail-on: Use never, violation, or error"),
   );

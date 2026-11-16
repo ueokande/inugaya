@@ -116,7 +116,13 @@
     "policy": "either",
     "violations": 1,
     "warnings": 0,
-    "errorCodes": []
+    "errorCodes": [],
+    "locations": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "line": 9
+      }
+    ]
   },
   {
     "repository": "local-only",
@@ -229,5 +235,12 @@
     "violations": 0,
     "warnings": 0,
     "errorCodes": ["INVALID_LOCKFILE"]
+  },
+  {
+    "repository": "composite-sha",
+    "policy": "either",
+    "violations": 0,
+    "warnings": 0,
+    "errorCodes": []
   }
 ]

@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -15,15 +16,10 @@ const rule: Rule = {
   validateParameters: (input) => input,
   evaluate: () => ({ applicable: true, findings: [] }),
 };
-const source = `version: 1
-targets:
-  repos: [org/repo]
-rules:
-  test/rule: {}
-reporters:
-  - name: json
-    options: {path: report/report.json}
-`;
+const source = fs.readFileSync(
+  new URL("../../../tests/fixtures/policies/unit.yaml", import.meta.url),
+  "utf8",
+);
 const directories: string[] = [];
 afterEach(async () => {
   await Promise.all(

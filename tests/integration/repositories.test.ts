@@ -31,7 +31,14 @@ afterEach(async () => {
 
 test.each(cases)(
   "$repository repository / $policy policy",
-  async ({ repository, policy: profile, violations, warnings, errorCodes }) => {
+  async ({
+    repository,
+    policy: profile,
+    violations,
+    warnings,
+    errorCodes,
+    locations,
+  }) => {
     const directory = await fsPromises.mkdtemp(
       path.join(os.tmpdir(), "kypa-repository-"),
     );
@@ -64,6 +71,14 @@ test.each(cases)(
     expect(report.resources[0]?.metadata.scannedCommit).toBe(fixtureCommit);
     expect(report.evaluations).toHaveLength(loaded.policy.rules.length);
     expect(findingCounts(report)).toEqual({ violations, warnings });
+    if (locations) {
+      expect(
+        report.findings.map((finding) => ({
+          path: finding.location?.path,
+          line: finding.location?.line,
+        })),
+      ).toEqual(locations);
+    }
     expect(report.errors.map((error) => error.code)).toEqual(errorCodes);
     expect(report.run.status).toBe(errorCodes.length ? "partial" : "complete");
     expect(shouldFail(report, "violation")).toBe(
@@ -154,6 +169,19 @@ test("file caches are shared by evidence collectors but reset for the next colle
   expect(first["github/action-references@1"]?.state).toBe("available");
   expect(first["github/actions-lockfile@1"]?.state).toBe("available");
   expect(second).toEqual(first);
+  expect(resource.metadata.scannedCommit).toBe(fixtureCommit);
+  const references = first["github/action-references@1"];
+  expect(references).toMatchObject({
+    state: "available",
+    data: {
+      references: [
+        { path: ".github/workflows/ci.yml", line: 7 },
+        { path: ".github/workflows/other.yaml", line: 7 },
+      ],
+    },
+  });
+  expect(JSON.stringify(first)).not.toContain("steps:");
+  expect(JSON.stringify(first)).not.toContain(fixtureToken);
   expect(
     fixture.requests.filter((request) => request.includes("/git/trees/")),
   ).toHaveLength(2);

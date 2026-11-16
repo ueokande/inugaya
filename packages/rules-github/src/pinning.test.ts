@@ -86,28 +86,6 @@ test("single-method policies enforce their method and only SHA-only skips lockfi
   ).toHaveLength(1);
 });
 
-test("uncovered references are reported individually, including reusable workflows and composite manifests", () => {
-  for (const [ref, source] of [
-    ["org/repo/.github/workflows/reuse.yml@v1", path],
-    ["org/action@v1", "local/action.yml"],
-  ]) {
-    expect(
-      pinnedDependencies.evaluate(
-        resource,
-        evidence(ref as string, locked, source),
-        {},
-      ).findings,
-    ).toHaveLength(1);
-    expect(
-      pinnedDependencies.evaluate(
-        resource,
-        evidence((ref as string).replace("@v1", `@${sha}`), locked, source),
-        {},
-      ).findings,
-    ).toEqual([]);
-  }
-});
-
 test("malformed, unsupported, and unavailable lockfiles never silently fall back to SHA", () => {
   for (const lockfile of [
     {},
@@ -160,33 +138,4 @@ test("no references or empty repository is not applicable", () => {
       {},
     ).applicable,
   ).toBe(false);
-});
-
-test("mixed reference protection produces findings only at uncovered uses", () => {
-  const data = evidence("org/action@v1", locked);
-  data["github/action-references@1"] = available({
-    references: [
-      {
-        reference: "org/action@v1",
-        path,
-        line: 1,
-        url: "https://github.com/org/repo/blob/abc/ci.yml#L1",
-      },
-      {
-        reference: `org/sha-only@${sha}`,
-        path,
-        line: 2,
-        url: "https://github.com/org/repo/blob/abc/ci.yml#L2",
-      },
-      {
-        reference: "org/unpinned@main",
-        path,
-        line: 3,
-        url: "https://github.com/org/repo/blob/abc/ci.yml#L3",
-      },
-    ],
-  });
-  const result = pinnedDependencies.evaluate(resource, data, {});
-  expect(result.findings).toHaveLength(1);
-  expect(result.findings[0]?.location?.line).toBe(3);
 });

@@ -80,61 +80,6 @@ test("explicit targets have the same archive/fork filters; inaccessible targets 
   expect(result.errors).toHaveLength(1);
 });
 
-test("collects default-branch references at a resolved commit, without raw file contents in evidence", async () => {
-  const source =
-    "jobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n";
-  const provider = createGitHubProvider({
-    ...settings,
-    fetch: transport((path) => {
-      if (path === "/repos/org/repo-1") {
-        return repository();
-      }
-      if (path.includes("/commits/")) {
-        return { sha, commit: { tree: { sha } } };
-      }
-      if (path.includes("/git/trees/")) {
-        return {
-          truncated: false,
-          tree: [
-            {
-              path: ".github/workflows/ci.yml",
-              type: "blob",
-              mode: "100644",
-              sha,
-            },
-          ],
-        };
-      }
-      if (path.includes("/git/blobs/")) {
-        return {
-          encoding: "base64",
-          content: Buffer.from(source).toString("base64"),
-          size: source.length,
-        };
-      }
-      throw new Error(`Unexpected fixture request: ${path}`);
-    }),
-  });
-  const resource = (
-    await provider.discover({
-      ...targets,
-      orgs: [],
-      repos: ["org/repo-1"],
-    })
-  ).resources[0];
-  expect(resource).toBeDefined();
-  if (!resource) {
-    return;
-  }
-  const evidence = await provider.collect(resource, [
-    "github/action-references@1",
-  ]);
-  expect(evidence["github/action-references@1"]?.state).toBe("available");
-  expect(resource.metadata.scannedCommit).toBe(sha);
-  expect(JSON.stringify(evidence)).not.toContain("steps:");
-  expect(JSON.stringify(evidence)).not.toContain("fixture-token");
-});
-
 test.each([false, true])(
   "protection 404 requires established unprotected branch evidence (%s)",
   async (admin) => {
@@ -229,60 +174,6 @@ test("confirmed empty Git repositories are not applicable despite a default bran
       "github/action-references@1"
     ]?.state,
   ).toBe("not-applicable");
-});
-
-test("identical file blobs share one request while preserving separate file locations", async () => {
-  let requests = 0;
-  const source =
-    "jobs:\n  check:\n    steps:\n      - uses: actions/checkout@v6\n";
-  const provider = createGitHubProvider({
-    ...settings,
-    fetch: transport((path) => {
-      if (path.includes("/commits/")) {
-        return { sha, commit: { tree: { sha } } };
-      }
-      if (path.includes("/trees/")) {
-        return {
-          truncated: false,
-          tree: ["one", "two"].map((name) => ({
-            path: `.github/workflows/${name}.yml`,
-            type: "blob",
-            mode: "100644",
-            sha,
-          })),
-        };
-      }
-      if (path.includes("/blobs/")) {
-        requests++;
-        return {
-          encoding: "base64",
-          content: Buffer.from(source).toString("base64"),
-          size: source.length,
-        };
-      }
-      return repository();
-    }),
-  });
-  const resource = (
-    await provider.discover({
-      ...targets,
-      orgs: [],
-      repos: ["org/repo-1"],
-    })
-  ).resources[0];
-  if (!resource) {
-    throw new Error("Missing fixture resource");
-  }
-  const evidence = (
-    await provider.collect(resource, ["github/action-references@1"])
-  )["github/action-references@1"];
-  expect(evidence?.state).toBe("available");
-  expect(requests).toBe(1);
-  if (evidence?.state === "available") {
-    expect(
-      (evidence.data as { references: unknown[] }).references,
-    ).toHaveLength(2);
-  }
 });
 
 test.each([403, 404, 429, 503])(

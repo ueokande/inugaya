@@ -25,7 +25,7 @@ fixtures/
   cases.json
 ```
 
-Each entry in `fixtures/cases.json` selects a repository and central policy and declares expected error-level findings (`violations`), warn-level findings (`warnings`), and scan error codes. Add a case there when adding or changing a repository scenario. The four policy profiles cover SHA required, lockfile required, either accepted, and migration warnings. `sha-only.yaml` checks the combined rule with only the full-SHA method accepted.
+Each entry in `fixtures/cases.json` selects a repository and central policy and declares expected error-level findings (`violations`), warn-level findings (`warnings`), and scan error codes. Cases can also declare exact finding `locations` (path and line) when the position distinguishes covered from uncovered uses. Add a case there when adding or changing a repository scenario. The four policy profiles cover SHA required, lockfile required, either accepted, and migration warnings. `sha-only.yaml` checks the combined rule with only the full-SHA method accepted.
 
 `integration/repositories.test.ts` loads a real policy in a temporary directory, discovers the fixture repository through the real GitHub provider, collects/parses its files, runs the selected rules, and writes JSON and HTML reports through the real reporters. It verifies findings, source locations, coverage, exit policy, serialized reports, and request deduplication. Integration HTML assets are deliberately minimal; bundled smoke tests use the actual built dashboard assets.
 
@@ -34,3 +34,7 @@ Each entry in `fixtures/cases.json` selects a repository and central policy and 
 Repository fixtures are excluded from Biome because malformed YAML, duplicate keys, and exact source locations are test inputs. Other test files and the expectations JSON remain checked. Do not run fixture workflows or install fixture dependencies. Keep fixture repositories small; protocol faults such as inaccessible APIs, truncated trees, unsupported file modes, and oversized responses remain focused provider unit tests.
 
 Pure rule tests keep small normalized evidence objects to exercise parameter validation and evaluation boundaries. They complement file-backed tests; they do not substitute for testing collection and parsing.
+
+Focused reference-parser tests read the `references/` fixture files directly, including invalid references and Action manifests; that directory is a collection of parser inputs, not an integration scenario. Policy schema tests use `policies/unit.yaml` with a synthetic rule and apply small mutations for individual validation boundaries. Keep protocol faults and normalized evidence boundary tests in unit tests; avoid repeating repository scenarios already covered by the integration matrix.
+
+`fixtures/reports/dashboard.json` contains the partial report with unsafe display values and warning/error findings used by the dashboard rendering tests. Clone it before mutations so cases remain independent.

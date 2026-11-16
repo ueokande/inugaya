@@ -83,17 +83,9 @@ test("only complete readable trees establish absence", async () => {
 });
 
 test.each([
-  ["version: [", {}],
-  ["version: one\nversion: two", {}],
-  ["", {}],
   ["version: v0.0.3", { mode: "120000" }],
   ["version: v0.0.3", { size: 1_048_577 }],
   ["version: v0.0.3", { denied: true }],
-] as const)(
-  "invalid or unreadable lockfiles are unavailable",
-  async (source, options) => {
-    expect((await collect(source, options)).evidence?.state).toBe(
-      "unavailable",
-    );
-  },
-);
+] as const)("unreadable lockfiles are unavailable", async (source, options) => {
+  expect((await collect(source, options)).evidence?.state).toBe("unavailable");
+});

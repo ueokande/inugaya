@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "id": "fixture",
+    "startedAt": "2026-01-01T00:00:00Z",
+    "completedAt": "2026-01-01T00:00:00Z",
+    "toolVersion": "0.1.0",
+    "policyVersion": 1,
+    "policyDigest": "",
+    "status": "partial"
+  },
+  "scope": {
+    "requested": {
+      "orgs": [],
+      "repos": [],
+      "exclude": [],
+      "includeArchived": false,
+      "includeForks": false
+    },
+    "discovered": 1,
+    "evaluated": 1,
+    "excluded": [],
+    "discoveryLimitedToAccessibleResources": true
+  },
+  "resources": [
+    {
+      "provider": "github",
+      "type": "repository",
+      "id": "1",
+      "name": "<img src=x onerror=alert(1)>",
+      "url": "",
+      "metadata": {}
+    }
+  ],
+  "evaluations": [
+    {
+      "resource": "github/repository/1",
+      "rule": "test/rule",
+      "ruleVersion": "1",
+      "severity": "high",
+      "level": "error",
+      "status": "fail",
+      "findingIds": ["1"],
+      "evidence": []
+    },
+    {
+      "resource": "github/repository/1",
+      "rule": "test/warning",
+      "ruleVersion": "1",
+      "severity": "high",
+      "level": "warn",
+      "status": "fail",
+      "findingIds": ["2"],
+      "evidence": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "1",
+      "key": "key",
+      "resource": "github/repository/1",
+      "rule": "test/rule",
+      "ruleVersion": "1",
+      "severity": "high",
+      "level": "error",
+      "message": "<script>alert(1)</script>",
+      "remediation": "Fix",
+      "location": {
+        "path": "file",
+        "line": 1,
+        "url": "javascript:alert(1)"
+      }
+    },
+    {
+      "id": "2",
+      "key": "key",
+      "resource": "github/repository/1",
+      "rule": "test/warning",
+      "ruleVersion": "1",
+      "severity": "high",
+      "level": "warn",
+      "message": "<script>alert(1)</script>",
+      "remediation": "Fix",
+      "location": {
+        "path": "file",
+        "line": 1,
+        "url": "javascript:alert(1)"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "phase": "collection",
+      "code": "ACCESS",
+      "message": "No access"
+    }
+  ],
+  "warnings": []
+}

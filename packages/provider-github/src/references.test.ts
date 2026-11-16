@@ -40,7 +40,7 @@ test("collects composite references but not JavaScript Action manifests", () => 
   ).toHaveLength(1);
   expect(
     collectReferences(
-      "runs:\n  using: node24\n  main: index.js\n",
+      fixture(".github/actions/javascript/action.yml"),
       "action.yml",
       "org/repo",
       "a".repeat(40),
@@ -49,29 +49,24 @@ test("collects composite references but not JavaScript Action manifests", () => 
 });
 
 test.each([
-  "jobs: [",
-  "jobs:\n  a:\n    uses: nope\n",
-  "jobs:\n  a:\n    steps:\n      - uses: 42\n",
-  // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub expression fixture, not JavaScript interpolation.
-  "jobs:\n  a:\n    uses: ${{ inputs.action }}\n",
-])(
-  "parse failures and unsupported references cannot silently pass",
-  (source) => {
-    expect(() =>
-      collectReferences(
-        source,
-        ".github/workflows/ci.yml",
-        "org/repo",
-        "a".repeat(40),
-      ),
-    ).toThrow();
-  },
-);
+  "invalid-reference",
+  "non-string-reference",
+  "expression-reference",
+])("unsupported references cannot silently pass: %s", (name) => {
+  expect(() =>
+    collectReferences(
+      fixture(`.github/workflows/${name}.yml`),
+      ".github/workflows/ci.yml",
+      "org/repo",
+      "a".repeat(40),
+    ),
+  ).toThrow();
+});
 
 test("same-repository $/ references are local and require no external SHA", () => {
   expect(
     collectReferences(
-      "jobs:\n  check:\n    steps:\n      - uses: $/path/to/action\n",
+      fixture(".github/workflows/same-repository.yml"),
       ".github/workflows/ci.yml",
       "org/repo",
       "a".repeat(40),
@@ -79,15 +74,16 @@ test("same-repository $/ references are local and require no external SHA", () =
   ).toEqual([]);
 });
 
-test.each([
-  "runs: {using: 42}\n",
-  "runs: {using: unexpected}\n",
-  "runs: {using: composite}\n",
-])(
-  "invalid Action manifests cannot become not-applicable evaluations",
-  (text) => {
+test.each(["non-string-runtime", "unknown-runtime", "missing-steps"])(
+  "invalid Action manifests cannot become not-applicable evaluations: %s",
+  (name) => {
     expect(() =>
-      collectReferences(text, "action.yml", "org/repo", "a".repeat(40)),
+      collectReferences(
+        fixture(`.github/actions/${name}/action.yml`),
+        "action.yml",
+        "org/repo",
+        "a".repeat(40),
+      ),
     ).toThrow();
   },
 );
@@ -95,7 +91,7 @@ test.each([
 test("same-repository $/ references reject an explicit @ref", () => {
   expect(() =>
     collectReferences(
-      "jobs:\n  check:\n    steps:\n      - uses: $/action@main\n",
+      fixture(".github/workflows/same-repository-ref.yml"),
       ".github/workflows/ci.yml",
       "org/repo",
       "a".repeat(40),
