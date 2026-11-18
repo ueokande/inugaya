@@ -1,0 +1,5 @@
+name: Composite
+runs:
+  using: composite
+  steps:
+    - uses: org/action@v1

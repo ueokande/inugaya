@@ -90,10 +90,21 @@ export async function runScan(
         .get(selected.id)
         ?.resourceTypes.includes(`${resource.provider}/${resource.type}`),
     );
+    const evidenceIds = new Map(
+      applicable.map((selected) => {
+        const rule = ruleMap.get(selected.id);
+        return [
+          selected.id,
+          rule?.getRequiredEvidence?.(selected.parameters) ??
+            rule?.requiredEvidence ??
+            [],
+        ];
+      }),
+    );
     const ids = [
       ...new Set(
         applicable.flatMap((selected) => [
-          ...(ruleMap.get(selected.id)?.requiredEvidence ?? []),
+          ...(evidenceIds.get(selected.id) ?? []),
         ]),
       ),
     ];
@@ -128,14 +139,16 @@ export async function runScan(
       if (!rule) {
         throw new FatalError("REGISTRY", "Unknown rule.");
       }
+      const requiredEvidence = evidenceIds.get(selected.id) ?? [];
       const evaluation: Report["evaluations"][number] = {
         resource: key,
         rule: rule.id,
         ruleVersion: rule.version,
         severity: selected.severity,
+        level: selected.level,
         status: "not-applicable",
         findingIds: [],
-        evidence: rule.requiredEvidence.flatMap((id) => {
+        evidence: requiredEvidence.flatMap((id) => {
           const item = evidence[id];
           return item
             ? [{ id, state: item.state, observedAt: item.observedAt }]
@@ -146,7 +159,7 @@ export async function runScan(
       if (!applicable.includes(selected)) {
         continue;
       }
-      const unavailable = rule.requiredEvidence.find(
+      const unavailable = requiredEvidence.find(
         (id) => !evidence[id] || evidence[id]?.state === "unavailable",
       );
       if (unavailable) {
@@ -178,6 +191,7 @@ export async function runScan(
             rule: rule.id,
             ruleVersion: rule.version,
             severity: selected.severity,
+            level: selected.level,
           });
           evaluation.findingIds.push(id);
         }

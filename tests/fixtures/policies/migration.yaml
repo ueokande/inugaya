@@ -1,0 +1,11 @@
+version: 1
+targets:
+  repos: [fixture/target]
+rules:
+  actions/pinned-dependencies: { level: error }
+  actions/lockfile: { level: warn }
+reporters:
+  - name: json
+    options: { path: report/report.json }
+  - name: html
+    options: { directory: site, basePath: / }

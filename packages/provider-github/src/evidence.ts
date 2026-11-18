@@ -1,26 +1,10 @@
 import { FatalError } from "@kypa/sdk";
+import { parseDocument } from "yaml";
 import { z } from "zod";
 import { ApiError, type GitHubClient } from "./client.js";
 import { EvidenceError } from "./errors.js";
 import { type ActionReference, collectReferences } from "./references.js";
-
-const treeSchema = z.object({
-  truncated: z.boolean(),
-  tree: z.array(
-    z.object({
-      path: z.string(),
-      mode: z.string(),
-      type: z.string(),
-      sha: z.string().regex(/^[a-f0-9]{40}$/),
-    }),
-  ),
-});
-
-const blobSchema = z.object({
-  encoding: z.literal("base64"),
-  content: z.string(),
-  size: z.number().int().nonnegative(),
-});
+import { type RepositoryFiles, repositoryPath } from "./repository-files.js";
 
 const protectionSchema = z.object({
   required_pull_request_reviews: z
@@ -28,60 +12,25 @@ const protectionSchema = z.object({
     .nullish(),
 });
 
-export function repositoryPath(name: string): string {
-  return `/repos/${name.split("/").map(encodeURIComponent).join("/")}`;
-}
-
 export async function collectActionReferences(
-  api: GitHubClient,
-  snapshot: { repository: string; commit: string; tree: string },
+  files: RepositoryFiles,
   signal?: AbortSignal,
 ): Promise<{ references: ActionReference[] }> {
-  const base = repositoryPath(snapshot.repository);
-  const tree = treeSchema.parse(
-    await api.get(`${base}/git/trees/${snapshot.tree}?recursive=1`, signal),
-  );
-  if (tree.truncated) {
-    throw new EvidenceError(
-      "TRUNCATED_TREE",
-      "GitHub returned a truncated repository tree. Action reference coverage is incomplete; the full repository tree must be readable.",
-    );
-  }
-  const candidates = tree.tree.filter(
+  const entries = await files.entries();
+  const candidates = entries.filter(
     (entry) =>
       /^[.]github\/workflows\/[^/]+[.]ya?ml$/.test(entry.path) ||
       /(^|\/)action[.]ya?ml$/.test(entry.path),
   );
-  const blobs = new Map<string, Promise<unknown>>();
-  const loadBlob = (sha: string): Promise<unknown> => {
-    let pending = blobs.get(sha);
-    if (!pending) {
-      pending = api.get(`${base}/git/blobs/${sha}`, signal);
-      blobs.set(sha, pending);
-    }
-    return pending;
-  };
   const results = await Promise.allSettled(
     candidates.map(async (entry) => {
-      if (entry.type !== "blob" || !["100644", "100755"].includes(entry.mode)) {
-        throw new EvidenceError(
-          "UNSUPPORTED_FILE",
-          "An Action or workflow file is a symlink or another unsupported file type. Use regular files for complete reference scanning.",
-        );
-      }
-      const blob = blobSchema.parse(await loadBlob(entry.sha));
-      if (blob.size > 1_048_576) {
-        throw new EvidenceError(
-          "FILE_TOO_LARGE",
-          "An Action or workflow file exceeds the 1 MiB collection limit. Reference coverage is incomplete.",
-        );
-      }
+      const content = await files.read(entry);
       try {
         return collectReferences(
-          Buffer.from(blob.content, "base64").toString("utf8"),
+          content,
           entry.path,
-          snapshot.repository,
-          snapshot.commit,
+          files.repository,
+          files.commit,
         );
       } catch (error) {
         if (error instanceof EvidenceError) {
@@ -143,5 +92,32 @@ export async function collectClassicProtection(
       );
     }
     return { minimum: 0 };
+  }
+}
+
+export async function collectActionLockfile(
+  files: RepositoryFiles,
+): Promise<{ lockfile: unknown }> {
+  const entry = (await files.entries()).find(
+    (item) => item.path === ".github/workflows/actions.lock",
+  );
+  if (!entry) return { lockfile: null };
+  const doc = parseDocument(await files.read(entry), { uniqueKeys: true });
+  if (doc.errors.length) {
+    throw new EvidenceError(
+      "INVALID_LOCKFILE",
+      "Invalid Actions lockfile YAML. Check syntax and duplicate keys.",
+    );
+  }
+  try {
+    const lockfile: unknown = doc.toJS({ maxAliasCount: 50 });
+    // An empty file is invalid evidence, not an absent lockfile.
+    if (lockfile === null || lockfile === undefined) throw new Error();
+    return { lockfile };
+  } catch {
+    throw new EvidenceError(
+      "INVALID_LOCKFILE",
+      "The Actions lockfile is empty or its YAML aliases could not be resolved.",
+    );
   }
 }

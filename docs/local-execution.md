@@ -54,6 +54,8 @@ Open `http://localhost:8000/`.
 
 ## Failure policy
 
+With `--fail-on violation`, error-level findings and scan errors cause exit code `1`; warn-level findings alone do not. With `--fail-on error`, only scan errors cause exit code `1`. The CLI summary counts violations (error-level findings), warning findings, and scan errors separately.
+
 `--fail-on` accepts the same modes as the Action: `never` (default), `violation`, or `error`.
 
 ```sh

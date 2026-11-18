@@ -16,6 +16,8 @@ export const severities = [
   "critical",
 ] as const;
 
+export type RuleLevel = "warn" | "error";
+
 export type Severity = (typeof severities)[number];
 
 export interface Resource extends ResourceIdentity {
@@ -43,6 +45,7 @@ export interface FindingDraft {
 }
 
 export interface Finding extends FindingDraft {
+  level: RuleLevel;
   id: string;
   resource: string;
   rule: string;
@@ -55,6 +58,7 @@ export interface Rule {
   version: string;
   resourceTypes: readonly string[];
   requiredEvidence: readonly string[];
+  getRequiredEvidence?: (parameters: unknown) => readonly string[];
   defaultSeverity: Severity;
 
   validateParameters(input: unknown): unknown;
@@ -110,6 +114,7 @@ export interface Provider {
 }
 
 export interface Evaluation {
+  level: RuleLevel;
   resource: string;
   rule: string;
   ruleVersion: string;
@@ -155,6 +160,7 @@ export interface Reporter {
 }
 
 export interface RuleSelection {
+  level: RuleLevel;
   id: string;
   severity: Severity;
   parameters: unknown;
@@ -205,6 +211,19 @@ export function shouldFail(
 ): boolean {
   return (
     (policy !== "never" && report.errors.length > 0) ||
-    (policy === "violation" && report.findings.length > 0)
+    (policy === "violation" &&
+      report.findings.some((finding) => finding.level === "error"))
   );
+}
+
+export function findingCounts(report: Pick<Report, "findings">): {
+  violations: number;
+  warnings: number;
+} {
+  return {
+    violations: report.findings.filter((finding) => finding.level === "error")
+      .length,
+    warnings: report.findings.filter((finding) => finding.level === "warn")
+      .length,
+  };
 }

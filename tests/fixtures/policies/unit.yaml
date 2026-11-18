@@ -1,0 +1,8 @@
+version: 1
+targets:
+  repos: [org/repo]
+rules:
+  test/rule: {}
+reporters:
+  - name: json
+    options: { path: report/report.json }

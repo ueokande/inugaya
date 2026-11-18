@@ -2,7 +2,7 @@
 
 > First-release report and dashboard contract. The source implementation uses the internal Report interface in packages/sdk; no Action release exists yet.
 
-The static dashboard shows the latest published scan only. Controls include resource, rule, and severity filters and search. History storage, scan diffs, and trends are excluded initially. Display run freshness, scope, coverage gaps, and partial status prominently before interpreting compliance.
+The static dashboard shows the latest published scan only. Controls include resource, rule, level, and severity filters and search. History storage, scan diffs, and trends are excluded initially. Display run freshness, scope, coverage gaps, and partial status prominently before interpreting compliance.
 
 ## Evaluations and findings
 
@@ -15,6 +15,8 @@ An evaluation records whether a rule could evaluate a resource and its outcome. 
 | `not-applicable`  | The rule does not apply to available resource/evidence conditions. |
 | `error`           | Required collection or evaluation could not complete reliably.     |
 
+Both evaluations and findings record `level: warn | error` separately from risk `severity`. A warning-only evaluation still has status `fail`; it is a policy finding, not an evaluation error. `violation-count` counts error-level findings and `warning-count` counts warn-level findings. `errors` contains scan errors; the top-level `warnings` array remains reserved for operational notices, not policy findings.
+
 Keep all findings; do not delete evidence of violations. Errors cannot be converted into passes.
 
 A `complete` report means the intended known scope was processed without scan errors; it does not mean compliant. A `partial` report has discovery, collection, or evaluation errors and must describe missing coverage even when violation count is zero. Inaccessible repositories may never appear in organization discovery, so completeness cannot prove access to the organization's entire inventory. Explicit targets and independent inventory reconciliation help reveal gaps.
@@ -23,20 +25,22 @@ File locations link to the resolved scanned commit. API evidence has its own col
 
 ## JSON report
 
-The proposed JSON report uses `schemaVersion: 1` and these top-level fields:
+The unreleased JSON report uses `schemaVersion: 1` and these top-level fields:
 
-| Field           | Intended content                                                                         |
-| --------------- | ---------------------------------------------------------------------------------------- |
-| `schemaVersion` | Report format version.                                                                   |
-| `run`           | Run identity, timestamps, tool and policy versions, and complete/partial status.         |
-| `scope`         | Requested/discovered/filtered scope and coverage information.                            |
-| `resources`     | Generic identities and provider details, including resolved commits for repositories.    |
-| `evaluations`   | Resource/rule outcomes, rule versions, and evidence availability/observation timestamps. |
-| `findings`      | Stable finding identities, safe messages, severity, and locations.                       |
-| `errors`        | Safe discovery, collection, and evaluation errors.                                       |
-| `warnings`      | Nonfatal operational notices.                                                            |
+| Field           | Intended content                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `schemaVersion` | Report format version.                                                                     |
+| `run`           | Run identity, timestamps, tool and policy versions, and complete/partial status.           |
+| `scope`         | Requested/discovered/filtered scope and coverage information.                              |
+| `resources`     | Generic identities and provider details, including resolved commits for repositories.      |
+| `evaluations`   | Resource/rule outcomes, rule versions, and evidence availability/observation timestamps.   |
+| `findings`      | Stable finding identities, safe messages, enforcement level, risk severity, and locations. |
+| `errors`        | Safe discovery, collection, and evaluation errors.                                         |
+| `warnings`      | Nonfatal operational notices.                                                              |
 
 Stable finding identity is intended to identify the same logical violation consistently; rule version and scanned commit remain recorded separately. The TypeScript Report interface in packages/sdk/src/index.ts defines the current field-level format. There is no separately published JSON Schema or supported external SDK.
+
+The JSON report is experimental. Keep `schemaVersion: 1` while its contract is under development; fields and semantics may change without a schema-version increment. No compatibility with reports from older development revisions is promised. Generate reports and dashboard assets from the same revision, and regenerate older reports after updating. The report records `run.toolVersion`; use the source commit when identifying an unreleased development revision.
 
 Consumers must check supported schema versions, completeness, and evaluation outcomes before interpreting finding counts. Reports must not contain secrets, raw API payloads, or unnecessary source content. Messages and locations may still reveal internal repository names and policy posture; restrict report access.
 

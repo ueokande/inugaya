@@ -21,7 +21,7 @@ const policy: Policy = {
     includeForks: false,
   },
   scan: { concurrency: 4, retries: 3, requestTimeoutSeconds: 30 },
-  rules: [{ id: "test", severity: "high", parameters: {} }],
+  rules: [{ id: "test", severity: "high", level: "error", parameters: {} }],
   reporters: [{ name: "test", options: {} }],
 };
 const rule: Rule = {
@@ -191,4 +191,35 @@ test("output failures identify the reporter and provide safe remediation", async
     diagnostics: [expect.stringContaining("reporters[0]:")],
   });
   expect(JSON.stringify(error)).not.toContain("secret path");
+});
+
+test("warning evaluations remain failures but do not fail violation policy; collection errors still fail", async () => {
+  const warningPolicy: Policy = {
+    ...policy,
+    rules: policy.rules.map((selected) => ({ ...selected, level: "warn" })),
+  };
+  const dependencies = {
+    provider,
+    rules: [rule],
+    reporters: [reporter],
+    policyDirectory: "",
+    policyDigest: "",
+  };
+  const report = await runScan(warningPolicy, dependencies);
+  expect(report.evaluations[0]).toMatchObject({
+    status: "fail",
+    level: "warn",
+  });
+  expect(report.findings[0]?.level).toBe("warn");
+  expect(shouldFail(report, "violation")).toBe(false);
+  const partial = await runScan(warningPolicy, {
+    ...dependencies,
+    provider: { ...provider, collect: async () => ({}) },
+  });
+  expect(partial.evaluations[0]).toMatchObject({
+    status: "error",
+    level: "warn",
+  });
+  expect(shouldFail(partial, "violation")).toBe(true);
+  expect(shouldFail(partial, "error")).toBe(true);
 });

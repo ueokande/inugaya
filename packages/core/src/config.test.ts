@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -15,15 +16,10 @@ const rule: Rule = {
   validateParameters: (input) => input,
   evaluate: () => ({ applicable: true, findings: [] }),
 };
-const source = `version: 1
-targets:
-  repos: [org/repo]
-rules:
-  test/rule: {}
-reporters:
-  - name: json
-    options: {path: report/report.json}
-`;
+const source = fs.readFileSync(
+  new URL("../../../tests/fixtures/policies/unit.yaml", import.meta.url),
+  "utf8",
+);
 const directories: string[] = [];
 afterEach(async () => {
   await Promise.all(
@@ -205,4 +201,32 @@ test("existing output errors identify the affected reporter without printing its
     "reporters[0].options.path: Output destination already exists",
   );
   expect(message).not.toContain("private-token");
+});
+
+test("rule level defaults to error; warn is independent of severity; off and enabled false disable", () => {
+  expect(parsePolicy(source, [rule]).rules[0]?.level).toBe("error");
+  const text = source.replace(
+    "test/rule: {}",
+    "test/rule: {level: warn, severity: critical}",
+  );
+  expect(parsePolicy(text, [rule]).rules[0]).toMatchObject({
+    level: "warn",
+    severity: "critical",
+  });
+  for (const setting of ["{level: off}", "{enabled: false, level: warn}"]) {
+    expect(() =>
+      parsePolicy(source.replace("test/rule: {}", `test/rule: ${setting}`), [
+        rule,
+      ]),
+    ).toThrow("At least one enabled");
+  }
+  const off = text.replace("rules:\n", "rules:\n  disabled: {level: off}\n");
+  expect(
+    parsePolicy(off, [rule, { ...rule, id: "disabled" }]).rules,
+  ).toHaveLength(1);
+  const invalid = source.replace(
+    "test/rule: {}",
+    "test/rule: {level: warning}",
+  );
+  expect(() => parsePolicy(invalid, [rule])).toThrow("Policy fields");
 });

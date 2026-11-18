@@ -1,0 +1,9 @@
+name: CI
+on: push
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/local
+      - uses: $/tools/action
+      - uses: docker://alpine:3

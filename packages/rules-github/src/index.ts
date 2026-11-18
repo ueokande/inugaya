@@ -1,16 +1,12 @@
 import type { Evidence, Rule } from "@kypa/sdk";
 import { z } from "zod";
+import { actionReferences, isFullSha } from "./evidence.js";
+import { actionsLockfile } from "./lockfile.js";
+import { pinnedDependencies } from "./pinning.js";
 
-const actionReferences = z.object({
-  references: z.array(
-    z.object({
-      reference: z.string(),
-      path: z.string(),
-      line: z.number().int().positive(),
-      url: z.string().url(),
-    }),
-  ),
-});
+export { actionsLockfile } from "./lockfile.js";
+export { pinnedDependencies } from "./pinning.js";
+
 const protection = z.object({ minimum: z.number().int().nonnegative() });
 
 export const fullSha: Rule = {
@@ -33,7 +29,7 @@ export const fullSha: Rule = {
     return {
       applicable: data.references.length > 0,
       findings: data.references
-        .filter((ref) => !/@[a-fA-F0-9]{40}$/.test(ref.reference))
+        .filter((ref) => !isFullSha(ref.reference))
         .map((ref) => ({
           key: JSON.stringify([ref.path, ref.line, ref.reference]),
           message:
@@ -85,4 +81,9 @@ export const requiredReviews: Rule = {
   },
 };
 
-export const builtInRules: readonly Rule[] = [fullSha, requiredReviews];
+export const builtInRules: readonly Rule[] = [
+  fullSha,
+  actionsLockfile,
+  pinnedDependencies,
+  requiredReviews,
+];

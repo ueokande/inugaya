@@ -16,7 +16,9 @@ outputs:
   status:
     description: Scan coverage status (complete or partial).
   violation-count:
-    description: Number of findings.
+    description: Number of error-level findings.
+  warning-count:
+    description: Number of warn-level findings.
   error-count:
     description: Number of discovery, collection, and evaluation errors.
 runs:

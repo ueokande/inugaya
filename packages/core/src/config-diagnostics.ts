@@ -17,6 +17,8 @@ const fields = new Set([
   "rules",
   "enabled",
   "severity",
+  "level",
+  "acceptedMethods",
   "parameters",
   "reporters",
   "name",
@@ -79,6 +81,12 @@ function explanation(issue: z.core.$ZodIssue): string {
   }
   if (issue.code === "invalid_format") {
     return "Use a valid organization name, owner/repository name, or exclusion pattern. Exclusion patterns support single * wildcards.";
+  }
+  if (field === "level") {
+    return "Use off, warn, or error.";
+  }
+  if (field === "acceptedMethods" || issue.path.includes("acceptedMethods")) {
+    return "Use a nonempty list of distinct methods: full-sha or lockfile.";
   }
   if (field === "severity") {
     return "Use info, low, medium, high, or critical.";

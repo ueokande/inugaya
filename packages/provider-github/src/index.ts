@@ -9,10 +9,11 @@ import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
 import { discoverTargets } from "./discovery.js";
 import { describeGitHubError, EvidenceError } from "./errors.js";
 import {
+  collectActionLockfile,
   collectActionReferences,
   collectClassicProtection,
-  repositoryPath,
 } from "./evidence.js";
+import { createRepositoryFiles, repositoryPath } from "./repository-files.js";
 
 export { ApiError, GitHubClient } from "./client.js";
 
@@ -83,19 +84,22 @@ export function createGitHubProvider(options: ClientOptions): Provider {
         }
         return result;
       }
+      const files = createRepositoryFiles(
+        api,
+        {
+          repository: resource.name,
+          commit: commit.sha,
+          tree: commit.commit.tree.sha,
+        },
+        signal,
+      );
       for (const id of ids) {
         try {
           let data: unknown;
           if (id === "github/action-references@1") {
-            data = await collectActionReferences(
-              api,
-              {
-                repository: resource.name,
-                commit: commit.sha,
-                tree: commit.commit.tree.sha,
-              },
-              signal,
-            );
+            data = await collectActionReferences(files, signal);
+          } else if (id === "github/actions-lockfile@1") {
+            data = await collectActionLockfile(files);
           } else if (id === "github/classic-protection@1") {
             data = await collectClassicProtection(
               api,

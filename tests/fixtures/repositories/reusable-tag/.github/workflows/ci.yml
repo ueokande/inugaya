@@ -1,0 +1,5 @@
+name: CI
+on: push
+jobs:
+  reuse:
+    uses: org/workflows/.github/workflows/check.yml@v1

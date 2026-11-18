@@ -25,9 +25,13 @@ scan:
   requestTimeoutSeconds: 30
 
 rules:
-  actions/full-sha:
-    enabled: true
+  actions/pinned-dependencies:
+    level: error
     severity: high
+    parameters:
+      acceptedMethods: [full-sha, lockfile]
+  actions/lockfile:
+    level: warn
   repository/required-reviews:
     severity: medium
     parameters:
@@ -75,7 +79,7 @@ Octokit handles transient-error retries and primary/secondary rate limits. Each 
 
 ## Rule selection
 
-Only rules listed in `rules` with `enabled` other than `false` run. `enabled` defaults to `true`; severity defaults to the rule's declared default. Allowed severities are `info`, `low`, `medium`, `high`, and `critical`. `parameters` are validated using the rule's runtime schema, including defaults and constraints. Unknown rule IDs, invalid parameters, unknown settings, and configurations with no enabled rules are validation errors.
+Only rules listed in `rules` with `enabled` other than `false` and `level` other than `off` run. `enabled` defaults to `true`. `level` accepts `off`, `warn`, or `error` and defaults to `error`, preserving the behavior of configurations that omit it. Warning findings remain in reports but do not fail `fail-on: violation`; error findings do. Collection and evaluation errors are separate from finding levels and still fail both `violation` and `error` failure policies. Risk severity defaults to the rule's declared default and is independent of enforcement level. Allowed severities are `info`, `low`, `medium`, `high`, and `critical`. `parameters` are validated using the rule's runtime schema, including defaults and constraints. Unknown rule IDs, invalid parameters, unknown settings, and configurations with no enabled rules are validation errors.
 
 ## Reporters
 

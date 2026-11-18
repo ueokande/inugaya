@@ -1,0 +1,6 @@
+name: Local
+runs:
+  using: composite
+  steps:
+    - run: echo fixture
+      shell: bash
