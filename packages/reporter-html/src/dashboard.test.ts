@@ -1,4 +1,4 @@
-import type { Report } from "@kypa/sdk";
+import type { Report } from "@inugaya/sdk";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, test, vi } from "vitest";
 import dashboardReport from "../../../tests/fixtures/reports/dashboard.json" with {

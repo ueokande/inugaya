@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: kypa-release
+  group: inugaya-release
   cancel-in-progress: false
 jobs:
   release-please:
@@ -84,7 +84,7 @@ jobs:
           name: action-release-build
           path: dist
       - name: Copy source GitHub Release notes
-        run: gh release view "$SOURCE_TAG" --json body --jq '.body' > "$RUNNER_TEMP/kypa-release-notes.md"
+        run: gh release view "$SOURCE_TAG" --json body --jq '.body' > "$RUNNER_TEMP/inugaya-release-notes.md"
       - name: Commit the build and create an immutable distribution tag
         run: |
           git config user.name 'github-actions[bot]'
@@ -94,4 +94,4 @@ jobs:
           git tag --annotate "$RELEASE_VERSION" -m "Release $RELEASE_VERSION (source $SOURCE_SHA)"
           git push origin "refs/tags/$RELEASE_VERSION"
       - name: Publish distribution GitHub Release
-        run: gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/kypa-release-notes.md"
+        run: gh release create "$RELEASE_VERSION" --verify-tag --title "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/inugaya-release-notes.md"

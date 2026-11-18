@@ -16,13 +16,13 @@ for (const scenario of [
   "unpinned",
 ]) {
   const directory = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "kypa-action-smoke-"),
+    path.join(os.tmpdir(), "inugaya-action-smoke-"),
   );
   try {
     const migration = scenario === "warning" || scenario === "unpinned";
     await fsPromises.copyFile(
       policyFile(migration ? "migration" : "smoke"),
-      path.join(directory, "kypa.yaml"),
+      path.join(directory, "inugaya.yaml"),
     );
 
     const output = path.join(directory, "outputs");
@@ -43,8 +43,8 @@ for (const scenario of [
         env: {
           PATH: process.env.PATH ?? "",
           INPUT_TOKEN: scenario === "fatal" ? "" : "fixture-token",
-          KYPA_FIXTURE_PINNING: migration ? scenario : "",
-          INPUT_CONFIG: "kypa.yaml",
+          INUGAYA_FIXTURE_PINNING: migration ? scenario : "",
+          INPUT_CONFIG: "inugaya.yaml",
           "INPUT_FAIL-ON":
             scenario === "violation" || migration ? "violation" : "never",
           GITHUB_OUTPUT: output,
@@ -91,7 +91,7 @@ for (const scenario of [
       String(migration ? 1 : 0),
     );
     assert.match(outputs, /complete/);
-    assert.match(await fsPromises.readFile(summary, "utf8"), /Kypa scan/);
+    assert.match(await fsPromises.readFile(summary, "utf8"), /Inugaya scan/);
     const html = await fsPromises.readFile(
       path.join(directory, "site/index.html"),
       "utf8",

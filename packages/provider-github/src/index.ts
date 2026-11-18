@@ -3,7 +3,7 @@ import {
   FatalError,
   type Provider,
   type Resource,
-} from "@kypa/sdk";
+} from "@inugaya/sdk";
 import { z } from "zod";
 import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
 import { discoverTargets } from "./discovery.js";

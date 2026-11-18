@@ -1,4 +1,4 @@
-import { FatalError } from "@kypa/sdk";
+import { FatalError } from "@inugaya/sdk";
 import { parseDocument } from "yaml";
 import { z } from "zod";
 import { ApiError, type GitHubClient } from "./client.js";

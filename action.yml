@@ -1,4 +1,4 @@
-name: kypa
+name: inugaya
 description: Scan GitHub repositories against centrally configured policies.
 inputs:
   token:
@@ -6,7 +6,7 @@ inputs:
     required: true
   config:
     description: Path to the central policy file.
-    default: kypa.yaml
+    default: inugaya.yaml
   fail-on:
     description: Failure policy after report generation (never, violation, or error).
     default: never

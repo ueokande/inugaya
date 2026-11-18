@@ -1,4 +1,4 @@
-import { FatalError, type Policy, type Report } from "@kypa/sdk";
+import { FatalError, type Policy, type Report } from "@inugaya/sdk";
 import { expect, test, vi } from "vitest";
 import { type CliDependencies, run } from "./index.js";
 
@@ -33,7 +33,7 @@ test("help works without a token or policy and performs no collection", async ()
   const deps = dependencies();
   expect(await run(["--help"], {}, deps)).toBe(0);
   expect(deps.stdout).toHaveBeenCalledWith(
-    expect.stringContaining("Usage: kypa"),
+    expect.stringContaining("Usage: inugaya"),
   );
   expect(deps.load).not.toHaveBeenCalled();
   expect(deps.scan).not.toHaveBeenCalled();
@@ -43,7 +43,7 @@ test.each([
   [
     [],
     { GH_TOKEN: "primary", GITHUB_TOKEN: "fallback" },
-    "kypa.yaml",
+    "inugaya.yaml",
     "primary",
   ],
   [

@@ -2,7 +2,7 @@
 
 > First-release YAML contract, implemented in the source tree but not released yet.
 
-Use `kypa.yaml` by default or select another file with the Action's `config` input. All local paths, including output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
+Use `inugaya.yaml` by default or select another file with the Action's `config` input. All local paths, including output paths, resolve relative to the policy file, not the shell's working directory. Unknown keys and duplicate YAML keys are rejected.
 
 ## Complete example
 
@@ -44,7 +44,7 @@ reporters:
   - name: html
     options:
       directory: site
-      basePath: /kypa-monitor/
+      basePath: /inugaya-monitor/
 ```
 
 This example spans two owners. Confirm that the selected authentication covers both; a fine-grained PAT does not automatically do so. Repositories matching `example-org/legacy-*` are excluded from the scan.
@@ -83,7 +83,7 @@ Only rules listed in `rules` with `enabled` other than `false` and `level` other
 
 ## Reporters
 
-`json` requires `options.path`, the destination JSON file. `html` requires `options.directory` and `options.basePath`. A base path must start and end with `/`: use `/` at a root or `/kypa-monitor/` for that project path. It must match the deployment URL.
+`json` requires `options.path`, the destination JSON file. `html` requires `options.directory` and `options.basePath`. A base path must start and end with `/`: use `/` at a root or `/inugaya-monitor/` for that project path. It must match the deployment URL.
 
 Output destinations must not overlap each other or overwrite source or configuration. For example, do not put the JSON file inside the HTML destination, point HTML at the policy directory, or use a source file as an output path. Use dedicated generated directories and ignore them in Git.
 

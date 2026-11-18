@@ -1,7 +1,7 @@
 import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Report } from "@kypa/sdk";
+import type { Report } from "@inugaya/sdk";
 import { afterEach, expect, test } from "vitest";
 import { jsonReporter } from "../../reporter-json/src/index.js";
 import { createHtmlReporter } from "./index.js";
@@ -27,11 +27,11 @@ test.each(["/", "/monitor/"])(
   "reporters write portable HTML at %s without inline untrusted data",
   async (basePath) => {
     const directory = await fsPromises.mkdtemp(
-      path.join(os.tmpdir(), "kypa-reporter-"),
+      path.join(os.tmpdir(), "inugaya-reporter-"),
     );
     directories.push(directory);
     const assets = await fsPromises.mkdtemp(
-      path.join(os.tmpdir(), "kypa-assets-"),
+      path.join(os.tmpdir(), "inugaya-assets-"),
     );
     directories.push(assets);
     await fsPromises.writeFile(

@@ -1,5 +1,5 @@
-import { matchesPattern } from "@kypa/core";
-import { type Discovery, FatalError, type TargetConfig } from "@kypa/sdk";
+import { matchesPattern } from "@inugaya/core";
+import { type Discovery, FatalError, type TargetConfig } from "@inugaya/sdk";
 import { z } from "zod";
 import { ApiError, type GitHubClient } from "./client.js";
 import { describeGitHubError } from "./errors.js";

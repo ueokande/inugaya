@@ -190,12 +190,12 @@ export class FatalError extends Error {
 export function formatFailure(error: unknown): string {
   if (error instanceof FatalError) {
     return [
-      `Kypa failed (${error.code}).`,
+      `Inugaya failed (${error.code}).`,
       ...error.diagnostics,
       "This run must not be published.",
     ].join("\n");
   }
-  return "Kypa failed. Check configuration, credentials, and output destinations. This run must not be published.";
+  return "Inugaya failed. Check configuration, credentials, and output destinations. This run must not be published.";
 }
 
 export function formatReportError(error: Report["errors"][number]): string {

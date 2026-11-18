@@ -1,12 +1,12 @@
 # GitHub Action and HTML reports
 
-> Proposed first-release Action contract. `ueokande/kypa@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Kypa today.
+> Proposed first-release Action contract. `ueokande/inugaya@v1.0.0` below is a future illustrative reference, not an existing release. The workflow cannot run Inugaya today.
 
-The initial supported entry point is the root GitHub Action in `ueokande/kypa`. The released Action bundles the scan runner, built-in components, and runtime dependencies. Consumers do not need pnpm, a consumer-side build, or an npm installation.
+The initial supported entry point is the root GitHub Action in `ueokande/inugaya`. The released Action bundles the scan runner, built-in components, and runtime dependencies. Consumers do not need pnpm, a consumer-side build, or an npm installation.
 
 ## Choose an Action reference
 
-Once a release exists, use its published version tag, such as the illustrative `ueokande/kypa@v1.0.0`, or preferably pin its reviewed full release-commit SHA. Review the release notes and recorded source provenance when selecting a version.
+Once a release exists, use its published version tag, such as the illustrative `ueokande/inugaya@v1.0.0`, or preferably pin its reviewed full release-commit SHA. Review the release notes and recorded source provenance when selecting a version.
 
 Use distribution tags named `vX.Y.Z`. Tags and GitHub Releases named `source-vX.Y.Z` track source versioning and do not contain the compiled Action; they are not runnable Action references. A source Release can exist before the distribution build finishes.
 
@@ -14,11 +14,11 @@ The development branch (`master`) does not contain compiled Action JavaScript an
 
 ## Inputs and outputs
 
-| Input     | Required | Default                                   |
-| --------- | -------- | ----------------------------------------- |
-| `token`   | Yes      | None; pass the central `KYPA_PAT` secret. |
-| `config`  | No       | `kypa.yaml`                               |
-| `fail-on` | No       | `never`; failure policies below.          |
+| Input     | Required | Default                                      |
+| --------- | -------- | -------------------------------------------- |
+| `token`   | Yes      | None; pass the central `INUGAYA_PAT` secret. |
+| `config`  | No       | `inugaya.yaml`                               |
+| `fail-on` | No       | `never`; failure policies below.             |
 
 After successful report generation, proposed outputs are:
 
@@ -38,16 +38,16 @@ The `html` reporter generates a portable static site. The workflow below uses Gi
 
 In the central execution repository, set Pages build source to **GitHub Actions** and explicitly configure private/access-controlled Pages visibility under your enterprise's supported settings. Verify access with an authorized viewer and an unauthorized viewer. Internal repository visibility alone is insufficient: Pages is not automatically private. Deployment does not configure visibility. Do not publish until the intended restriction is established.
 
-Create the `KYPA_PAT` Actions secret as described in [authentication](authentication.md). Ensure its owner can read targets and selected settings endpoints. Use the PAT only in collection; deployment uses the workflow's GITHUB_TOKEN and OIDC.
+Create the `INUGAYA_PAT` Actions secret as described in [authentication](authentication.md). Ensure its owner can read targets and selected settings endpoints. Use the PAT only in collection; deployment uses the workflow's GITHUB_TOKEN and OIDC.
 
 ## Complete illustrative workflow
 
-All Action versions below, including third-party versions, are illustrative. Before use, verify current supported releases, permissions, and compatibility. In production pin reviewed full commit SHAs for every Action, including Kypa.
+All Action versions below, including third-party versions, are illustrative. Before use, verify current supported releases, permissions, and compatibility. In production pin reviewed full commit SHAs for every Action, including Inugaya.
 
-Save this workflow in the central repository's `.github/workflows/kypa.yaml` after the software is released:
+Save this workflow in the central repository's `.github/workflows/inugaya.yaml` after the software is released:
 
 ```yaml
-name: Kypa policy scan
+name: Inugaya policy scan
 
 on:
   schedule:
@@ -57,7 +57,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: kypa-pages
+  group: inugaya-pages
   cancel-in-progress: false
 
 jobs:
@@ -70,11 +70,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Scan policies
-        id: kypa
-        uses: ueokande/kypa@v1.0.0
+        id: inugaya
+        uses: ueokande/inugaya@v1.0.0
         with:
-          token: ${{ secrets.KYPA_PAT }}
-          config: kypa.yaml
+          token: ${{ secrets.INUGAYA_PAT }}
+          config: inugaya.yaml
           fail-on: never
       - name: Upload generated site
         uses: actions/upload-pages-artifact@v3
@@ -98,7 +98,7 @@ jobs:
 
 The schedule requests 00:17 UTC / 09:17 JST daily. GitHub schedules are best effort, can be delayed, and run from the default branch. Keep the workflow and central policy on that branch. `workflow_dispatch` provides a manual run.
 
-For a project site at `/kypa-monitor/`, set the `html` reporter’s `basePath` to `/kypa-monitor/`; otherwise use the actual deployment path. The upload path `site` must match the policy's output directory relative to the workflow working directory.
+For a project site at `/inugaya-monitor/`, set the `html` reporter’s `basePath` to `/inugaya-monitor/`; otherwise use the actual deployment path. The upload path `site` must match the policy's output directory relative to the workflow working directory.
 
 ## Publication behavior
 

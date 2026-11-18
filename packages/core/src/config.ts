@@ -1,7 +1,7 @@
 import * as crypto from "node:crypto";
 import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
-import { FatalError, type Policy, type Rule, severities } from "@kypa/sdk";
+import { FatalError, type Policy, type Rule, severities } from "@inugaya/sdk";
 import { parseDocument } from "yaml";
 import { z } from "zod";
 import { policyDiagnostics } from "./config-diagnostics.js";

@@ -1,8 +1,10 @@
-# Kypa
+<img src="docs/assets/inugaya-logo.png" alt="Inugaya logo" width="160">
 
-**Keep Your Policies Aligned**
+# Inugaya（犬榧）
 
-Kypa is an OSS tool in development for scanning resource configuration against custom organizational policies, starting with GitHub Enterprise Cloud repositories.
+**Inspect Noncompliance Using Guidelines Across Your Assets.**
+
+Inugaya is an OSS tool in development for scanning resource configuration against custom organizational policies, starting with GitHub Enterprise Cloud repositories.
 
 Run scans centrally without installing workflows in each target repository. A PAT collects accessible files and settings; a static HTML dashboard presents the latest results on any static host, with access controls configured separately. GitHub Pages is one deployment option.
 
@@ -30,7 +32,7 @@ After building, run the private CLI from this checkout with `GH_TOKEN` (or `GITH
 
 ```sh
 pnpm build
-pnpm cli --config ./kypa.yaml
+pnpm cli --config ./inugaya.yaml
 ```
 
 Run `pnpm cli --help` for options. See [local execution](docs/local-execution.md) for policy setup, reports, and exit codes. The CLI is not distributed through npm.

@@ -1,6 +1,6 @@
 import { createRepositoryFixture } from "../../helpers/github-repository.ts";
 
-const scenario = process.env.KYPA_FIXTURE_PINNING;
+const scenario = process.env.INUGAYA_FIXTURE_PINNING;
 const repository =
   scenario === "warning"
     ? "sha-only"

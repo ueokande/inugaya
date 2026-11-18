@@ -1,4 +1,4 @@
-import { FatalError, type Policy, type Report } from "@kypa/sdk";
+import { FatalError, type Policy, type Report } from "@inugaya/sdk";
 import { expect, test, vi } from "vitest";
 import { run, type Toolkit } from "./index.js";
 

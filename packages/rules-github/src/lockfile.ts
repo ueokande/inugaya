@@ -1,4 +1,4 @@
-import type { Rule } from "@kypa/sdk";
+import type { Rule } from "@inugaya/sdk";
 import { z } from "zod";
 import { actionReferences } from "./evidence.js";
 

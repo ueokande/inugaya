@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { formatFailure, type Rule } from "@kypa/sdk";
+import { formatFailure, type Rule } from "@inugaya/sdk";
 import { afterEach, expect, test } from "vitest";
 import { z } from "zod";
 import { loadPolicy, matchesPattern, parsePolicy } from "./config.js";
@@ -65,7 +65,7 @@ test("patterns are case-insensitive, escape dots, and cannot cross owner boundar
 
 test("rejects overlapping, existing, escaping, and symlink output destinations", async () => {
   const directory = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "kypa-config-"),
+    path.join(os.tmpdir(), "inugaya-config-"),
   );
   directories.push(directory);
   const file = path.join(directory, "policy.yaml");
@@ -130,7 +130,7 @@ test.each([
   "configuration diagnostics never echo values, record keys, or unknown fields",
   (text) => {
     const message = diagnostic(text);
-    expect(message).toContain("Kypa failed (CONFIG)");
+    expect(message).toContain("Inugaya failed (CONFIG)");
     expect(message).not.toContain("private-token");
   },
 );
@@ -167,7 +167,7 @@ test("missing targets and rule parameter errors include actionable field paths",
 test("unreadable policy files have safe, actionable diagnostics", async () => {
   const file = path.join(
     os.tmpdir(),
-    "kypa-missing-private-token",
+    "inugaya-missing-private-token",
     "policy.yaml",
   );
   const error = await loadPolicy(file, [rule]).catch(
@@ -181,7 +181,7 @@ test("unreadable policy files have safe, actionable diagnostics", async () => {
 
 test("existing output errors identify the affected reporter without printing its path", async () => {
   const directory = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "kypa-config-"),
+    path.join(os.tmpdir(), "inugaya-config-"),
   );
   directories.push(directory);
   const file = path.join(directory, "policy.yaml");

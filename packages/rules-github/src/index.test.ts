@@ -1,4 +1,4 @@
-import type { Evidence, Resource } from "@kypa/sdk";
+import type { Evidence, Resource } from "@inugaya/sdk";
 import { expect, test } from "vitest";
 import { fullSha, requiredReviews } from "./index.js";
 

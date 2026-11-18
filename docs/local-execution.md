@@ -1,6 +1,6 @@
 # Local execution
 
-Run the private `@kypa/cli` package from a source checkout to scan real GitHub repositories. It uses the same policy loader, runner, provider, rules, and reporters as the Action. It does not require Actions environment variables. There is no npm CLI distribution.
+Run the private `@inugaya/cli` package from a source checkout to scan real GitHub repositories. It uses the same policy loader, runner, provider, rules, and reporters as the Action. It does not require Actions environment variables. There is no npm CLI distribution.
 
 ## Build
 
@@ -18,7 +18,7 @@ The build produces `dist/cli/index.js` and the dashboard assets. Rebuild after c
 
 Set `GH_TOKEN` in your shell using your preferred credential manager. The CLI falls back to `GITHUB_TOKEN` when `GH_TOKEN` is unset or blank. The token needs access to the target repositories and the selected evidence; see [authentication](authentication.md). Tokens are accepted only through the environment.
 
-Create `kypa.yaml`, replacing the repository name with one you can access:
+Create `inugaya.yaml`, replacing the repository name with one you can access:
 
 ```yaml
 version: 1
@@ -39,10 +39,10 @@ reporters:
 Run from the checkout root:
 
 ```sh
-pnpm cli --config ./kypa.yaml
+pnpm cli --config ./inugaya.yaml
 ```
 
-`--config` (short form `-c`) resolves relative to the current working directory and defaults to `kypa.yaml`. Reporter paths resolve relative to the policy file. Existing output destinations are rejected; choose fresh paths or remove only outputs you intentionally generated before running again. See [configuration](configuration.md) for other targets, rules, and collection settings.
+`--config` (short form `-c`) resolves relative to the current working directory and defaults to `inugaya.yaml`. Reporter paths resolve relative to the policy file. Existing output destinations are rejected; choose fresh paths or remove only outputs you intentionally generated before running again. See [configuration](configuration.md) for other targets, rules, and collection settings.
 
 The command prints scan status and counts to stdout and individual coverage errors, including HTTP status and remediation hints, to stderr. `partial` with zero resources means discovery did not produce scannable targets; zero findings in that case does not establish compliance. JSON and HTML files are written to the configured destinations, including when findings trigger a nonzero exit code. Serve the HTML directory through HTTP, for example:
 
@@ -59,7 +59,7 @@ With `--fail-on violation`, error-level findings and scan errors cause exit code
 `--fail-on` accepts the same modes as the Action: `never` (default), `violation`, or `error`.
 
 ```sh
-pnpm cli --config ./kypa.yaml --fail-on violation
+pnpm cli --config ./inugaya.yaml --fail-on violation
 ```
 
 | Exit code | Meaning                                                                                                                         |
