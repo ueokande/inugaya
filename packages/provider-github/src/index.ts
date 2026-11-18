@@ -6,6 +6,7 @@ import {
 } from "@inugaya/sdk";
 import { z } from "zod";
 import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
+import { collectDependencyUpdateConfig } from "./dependency-update-config.js";
 import { discoverTargets } from "./discovery.js";
 import { describeGitHubError, EvidenceError } from "./errors.js";
 import {
@@ -100,6 +101,10 @@ export function createGitHubProvider(options: ClientOptions): Provider {
             data = await collectActionReferences(files, signal);
           } else if (id === "github/actions-lockfile@1") {
             data = await collectActionLockfile(files);
+          } else if (id === "github/renovate-config@1") {
+            data = await collectDependencyUpdateConfig(files, "renovate");
+          } else if (id === "github/dependabot-config@1") {
+            data = await collectDependencyUpdateConfig(files, "dependabot");
           } else if (id === "github/classic-protection@1") {
             data = await collectClassicProtection(
               api,

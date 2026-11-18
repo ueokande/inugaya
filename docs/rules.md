@@ -138,3 +138,18 @@ Evaluate whether established classic default-branch protection requires at least
 This rule does **not** calculate effective rulesets, bypass permissions, enterprise enforcement, or the complete security posture of branch changes. A repository protected only by rulesets will not be treated as satisfying this classic-protection check; depending on available API evidence, it can produce an error or a failure even if its effective review requirements are strong. Select this rule only when this scope matches your organizational policy; do not enable it universally by default. See [authentication](authentication.md) for the distinction between token permission and account privilege.
 
 A 404 from the classic-protection endpoint is treated as confirmed absence only when a separate readable branch response establishes `protected: false`. Account administrator status alone does not prove the token has permission to read the protection endpoint. Otherwise the result is an error. A confirmed empty-repository API response yields `not-applicable` even if repository metadata includes a default branch name.
+
+## Dependency update waiting periods
+
+Both rules apply to `github/repository`, default to `medium` severity, take no parameters, and require Contents read access to the default branch. Enable either rule independently:
+
+```yaml
+rules:
+  renovate/minimum-release-age: {}
+  dependabot/cooldown: {}
+```
+
+- `renovate/minimum-release-age` looks for a positive `minimumReleaseAge` duration, such as `"3 days"`, at the top level or in an enabled `packageRules` entry. It inspects Renovate's first standard configuration for GitHub in discovery order: root `renovate.json`, `.github/renovate.json` (each also supporting `.jsonc` and `.json5`), the `.renovaterc` variants, then the `renovate` field of `package.json`. Missing configuration or an explicitly disabled top-level configuration is `not-applicable`.
+- `dependabot/cooldown` checks every version update entry in `.github/dependabot.yml` for at least one positive integer cooldown in `default-days`, `semver-major-days`, `semver-minor-days`, or `semver-patch-days`. Missing configuration or an empty update list is `not-applicable`.
+
+These checks verify explicitly declared settings. They do not expand Renovate presets or inherited settings, calculate effective coverage across package rules or ecosystems, apply Dependabot's platform defaults, or verify waiting periods for security updates. A setting scoped to certain packages or update types can pass. Unreadable or unparseable configuration produces an error. Findings link to the configuration in the scanned commit.
