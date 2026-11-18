@@ -16,6 +16,8 @@ import {
 } from "./evidence.js";
 import { createRepositoryFiles, repositoryPath } from "./repository-files.js";
 
+import { collectToolReleaseAge, releaseAgeTool } from "./tool-release-age.js";
+
 export { ApiError, GitHubClient } from "./client.js";
 
 const commitSchema = z.object({
@@ -97,6 +99,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
       for (const id of ids) {
         try {
           let data: unknown;
+          const packageTool = releaseAgeTool(id);
           if (id === "github/action-references@1") {
             data = await collectActionReferences(files, signal);
           } else if (id === "github/actions-lockfile@1") {
@@ -105,6 +108,8 @@ export function createGitHubProvider(options: ClientOptions): Provider {
             data = await collectDependencyUpdateConfig(files, "renovate");
           } else if (id === "github/dependabot-config@1") {
             data = await collectDependencyUpdateConfig(files, "dependabot");
+          } else if (packageTool) {
+            data = await collectToolReleaseAge(files, packageTool);
           } else if (id === "github/classic-protection@1") {
             data = await collectClassicProtection(
               api,

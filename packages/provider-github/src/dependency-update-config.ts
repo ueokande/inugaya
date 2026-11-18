@@ -65,7 +65,7 @@ export async function collectDependencyUpdateConfig(
   };
 }
 
-function validateJsonc(content: string): void {
+export function validateJsonc(content: string): void {
   const keys: Set<string>[] = [];
   visit(
     content,

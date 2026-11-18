@@ -1,0 +1,7 @@
+name: Fixture
+on: push
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install --uploaded-prior-to "$WAIT_TIME" sample

@@ -1,0 +1,1 @@
+{"scripts":{"deps":"ncu --cooldown=0 && ncu","help":"echo pip install example"}}
