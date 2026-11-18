@@ -1,10 +1,10 @@
 {
-  "name": "@kypa/reporter-json",
+  "name": "@inugaya/reporter-json",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
-    "@kypa/sdk": "workspace:*"
+    "@inugaya/sdk": "workspace:*"
   }
 }

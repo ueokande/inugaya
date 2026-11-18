@@ -6,5 +6,5 @@ export default defineConfig({
     assetPrefix: "./",
     cleanDistPath: true,
   },
-  html: { title: "Kypa policy scan" },
+  html: { title: "Inugaya policy scan" },
 });

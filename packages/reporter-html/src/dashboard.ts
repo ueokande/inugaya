@@ -1,4 +1,4 @@
-import { findingCounts, type Report } from "@kypa/sdk";
+import { findingCounts, type Report } from "@inugaya/sdk";
 import "./style.css";
 
 function element<K extends keyof HTMLElementTagNameMap>(
@@ -31,8 +31,8 @@ export function renderReport(report: Report): void {
   const main = element("main");
   document.body.replaceChildren(main);
   main.append(
-    element("h1", "Kypa"),
-    element("p", "Keep Your Policies Aligned"),
+    element("h1", "Inugaya"),
+    element("p", "Inspect Noncompliance Using Guidelines Across Your Assets."),
   );
   const freshness = element("section");
   freshness.append(

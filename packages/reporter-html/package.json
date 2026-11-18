@@ -1,11 +1,11 @@
 {
-  "name": "@kypa/reporter-html",
+  "name": "@inugaya/reporter-html",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
-    "@kypa/sdk": "workspace:*"
+    "@inugaya/sdk": "workspace:*"
   },
   "scripts": {
     "build": "rsbuild build"

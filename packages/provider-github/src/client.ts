@@ -1,5 +1,5 @@
 import * as crypto from "node:crypto";
-import { FatalError, type ScanSettings } from "@kypa/sdk";
+import { FatalError, type ScanSettings } from "@inugaya/sdk";
 import { Octokit, RequestError } from "octokit";
 import PQueue from "p-queue";
 
@@ -35,7 +35,7 @@ export class GitHubClient {
 
     this.api = new Octokit({
       auth: options.token,
-      userAgent: "kypa",
+      userAgent: "inugaya",
       retry: {
         retries: options.retries,
         // Empty repositories are domain results; throttling owns rate-limit retries.

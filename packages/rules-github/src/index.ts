@@ -1,4 +1,4 @@
-import type { Evidence, Rule } from "@kypa/sdk";
+import type { Evidence, Rule } from "@inugaya/sdk";
 import { z } from "zod";
 import { actionReferences, isFullSha } from "./evidence.js";
 import { actionsLockfile } from "./lockfile.js";

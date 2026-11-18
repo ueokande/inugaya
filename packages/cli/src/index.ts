@@ -1,11 +1,11 @@
 import * as path from "node:path";
 import * as url from "node:url";
 import * as util from "node:util";
-import { loadPolicy, runScan } from "@kypa/core";
-import { createGitHubProvider } from "@kypa/provider-github";
-import { createHtmlReporter } from "@kypa/reporter-html";
-import { jsonReporter } from "@kypa/reporter-json";
-import { builtInRules } from "@kypa/rules-github";
+import { loadPolicy, runScan } from "@inugaya/core";
+import { createGitHubProvider } from "@inugaya/provider-github";
+import { createHtmlReporter } from "@inugaya/reporter-html";
+import { jsonReporter } from "@inugaya/reporter-json";
+import { builtInRules } from "@inugaya/rules-github";
 import {
   findingCounts,
   formatFailure,
@@ -13,7 +13,7 @@ import {
   type Policy,
   type Report,
   shouldFail,
-} from "@kypa/sdk";
+} from "@inugaya/sdk";
 
 export interface CliDependencies {
   load: typeof loadPolicy;
@@ -51,12 +51,12 @@ const defaults: CliDependencies = {
   stderr: (message) => process.stderr.write(`${message}\n`),
 };
 
-const help = `Usage: kypa [options]
+const help = `Usage: inugaya [options]
 
-Scan GitHub repositories using a Kypa policy.
+Scan GitHub repositories using a Inugaya policy.
 
 Options:
-  -c, --config <path>    Policy file (default: kypa.yaml)
+  -c, --config <path>    Policy file (default: inugaya.yaml)
       --fail-on <mode>   never, violation, or error (default: never)
   -h, --help             Show this help
 
@@ -74,7 +74,7 @@ export async function run(
     ({ values } = util.parseArgs({
       args,
       options: {
-        config: { type: "string", short: "c", default: "kypa.yaml" },
+        config: { type: "string", short: "c", default: "inugaya.yaml" },
         "fail-on": { type: "string", default: "never" },
         help: { type: "boolean", short: "h" },
       },
@@ -105,7 +105,7 @@ export async function run(
   try {
     signal?.throwIfAborted();
     const loaded = await dependencies.load(
-      values.config ?? "kypa.yaml",
+      values.config ?? "inugaya.yaml",
       builtInRules,
     );
     const report = await dependencies.scan(

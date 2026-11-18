@@ -1,11 +1,11 @@
 import * as path from "node:path";
 import * as url from "node:url";
 import * as core from "@actions/core";
-import { loadPolicy, runScan } from "@kypa/core";
-import { createGitHubProvider } from "@kypa/provider-github";
-import { createHtmlReporter } from "@kypa/reporter-html";
-import { jsonReporter } from "@kypa/reporter-json";
-import { builtInRules } from "@kypa/rules-github";
+import { loadPolicy, runScan } from "@inugaya/core";
+import { createGitHubProvider } from "@inugaya/provider-github";
+import { createHtmlReporter } from "@inugaya/reporter-html";
+import { jsonReporter } from "@inugaya/reporter-json";
+import { builtInRules } from "@inugaya/rules-github";
 import {
   FatalError,
   findingCounts,
@@ -14,7 +14,7 @@ import {
   type Policy,
   type Report,
   shouldFail,
-} from "@kypa/sdk";
+} from "@inugaya/sdk";
 
 export interface Toolkit {
   getInput(name: string, options?: { required?: boolean }): string;
@@ -87,7 +87,7 @@ export async function run(
       ]);
     }
     const loaded = await dependencies.load(
-      toolkit.getInput("config") || "kypa.yaml",
+      toolkit.getInput("config") || "inugaya.yaml",
       builtInRules,
     );
     const report = await dependencies.scan(
@@ -102,7 +102,7 @@ export async function run(
     toolkit.setOutput("violation-count", counts.violations);
     toolkit.setOutput("warning-count", counts.warnings);
     toolkit.setOutput("error-count", report.errors.length);
-    toolkit.summary.addHeading("Kypa scan");
+    toolkit.summary.addHeading("Inugaya scan");
     toolkit.summary.addRaw(
       `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${counts.violations}; warnings: ${counts.warnings}; errors: ${report.errors.length}\n`,
     );

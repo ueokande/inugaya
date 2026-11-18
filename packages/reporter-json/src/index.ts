@@ -1,6 +1,6 @@
 import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
-import type { Reporter } from "@kypa/sdk";
+import type { Reporter } from "@inugaya/sdk";
 
 export const jsonReporter: Reporter = {
   id: "json",
@@ -13,7 +13,7 @@ export const jsonReporter: Reporter = {
     const destination = path.resolve(context.policyDirectory, options.path);
     await fsPromises.mkdir(path.dirname(destination), { recursive: true });
     const stage = await fsPromises.mkdtemp(
-      path.join(path.dirname(destination), ".kypa-json-"),
+      path.join(path.dirname(destination), ".inugaya-json-"),
     );
     try {
       const file = path.join(stage, "report.json");

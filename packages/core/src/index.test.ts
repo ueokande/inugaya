@@ -1,5 +1,5 @@
-import type { Policy, Provider, Reporter, Resource, Rule } from "@kypa/sdk";
-import { shouldFail } from "@kypa/sdk";
+import type { Policy, Provider, Reporter, Resource, Rule } from "@inugaya/sdk";
+import { shouldFail } from "@inugaya/sdk";
 import { expect, test, vi } from "vitest";
 import { runScan } from "./index.js";
 

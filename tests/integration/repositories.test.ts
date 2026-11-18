@@ -40,10 +40,10 @@ test.each(cases)(
     locations,
   }) => {
     const directory = await fsPromises.mkdtemp(
-      path.join(os.tmpdir(), "kypa-repository-"),
+      path.join(os.tmpdir(), "inugaya-repository-"),
     );
     directories.push(directory);
-    const config = path.join(directory, "kypa.yaml");
+    const config = path.join(directory, "inugaya.yaml");
     await fsPromises.copyFile(policyFile(profile), config);
     const loaded = await loadPolicy(config, builtInRules);
     const fixture = createRepositoryFixture(repository);

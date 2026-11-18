@@ -1,12 +1,12 @@
 {
-  "name": "@kypa/provider-github",
+  "name": "@inugaya/provider-github",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
-    "@kypa/core": "workspace:*",
-    "@kypa/sdk": "workspace:*",
+    "@inugaya/core": "workspace:*",
+    "@inugaya/sdk": "workspace:*",
     "octokit": "^5.0.5",
     "p-queue": "10.0.0",
     "yaml": "2.9.1",

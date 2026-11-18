@@ -8,7 +8,7 @@ import {
   type Reporter,
   type Rule,
   resourceKey,
-} from "@kypa/sdk";
+} from "@inugaya/sdk";
 import packageInfo from "../../../package.json" with { type: "json" };
 
 export { loadPolicy, matchesPattern, parsePolicy, within } from "./config.js";

@@ -15,7 +15,7 @@ const help = childProcess.spawnSync(process.execPath, [entry, "--help"], {
   timeout: 30_000,
 });
 assert.equal(help.status, 0, help.stderr);
-assert.match(help.stdout, /Usage: kypa/);
+assert.match(help.stdout, /Usage: inugaya/);
 
 for (const scenario of [
   "report",
@@ -27,7 +27,7 @@ for (const scenario of [
   "unpinned",
 ]) {
   const directory = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "kypa-cli-smoke-"),
+    path.join(os.tmpdir(), "inugaya-cli-smoke-"),
   );
   try {
     const migration = scenario === "warning" || scenario === "unpinned";
@@ -64,7 +64,7 @@ for (const scenario of [
         timeout: 30_000,
         env: {
           GH_TOKEN: scenario === "fatal" ? "" : "fixture-token",
-          KYPA_FIXTURE_PINNING: migration ? scenario : "",
+          INUGAYA_FIXTURE_PINNING: migration ? scenario : "",
         },
       },
     );

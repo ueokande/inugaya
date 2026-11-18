@@ -1,6 +1,6 @@
 # Contributor guidance
 
-Kypa means **Keep Your Policies Aligned**. It scans resources against centrally defined configuration policies. The initial TypeScript implementation is under development and unreleased. Keep documentation aligned with implemented behavior while clearly marking unreleased Action references.
+Inugaya means **Inspect Noncompliance Using Guidelines Across Your Assets**. It scans resources against centrally defined configuration policies. The initial TypeScript implementation is under development and unreleased. Keep documentation aligned with implemented behavior while clearly marking unreleased Action references.
 
 ## Language and documentation
 
@@ -61,14 +61,14 @@ Keep these components separate through explicit, versioned interfaces:
 
 Keep built-in component packages named by role and implementation:
 
-| Package                 | Directory                  | Role                                               |
-| ----------------------- | -------------------------- | -------------------------------------------------- |
-| `@kypa/provider-github` | `packages/provider-github` | GitHub resource discovery and evidence collection. |
-| `@kypa/rules-github`    | `packages/rules-github`    | Built-in GitHub evidence evaluation rules.         |
-| `@kypa/reporter-json`   | `packages/reporter-json`   | JSON report output.                                |
-| `@kypa/reporter-html`   | `packages/reporter-html`   | Portable HTML reporter and dashboard.              |
+| Package                    | Directory                  | Role                                               |
+| -------------------------- | -------------------------- | -------------------------------------------------- |
+| `@inugaya/provider-github` | `packages/provider-github` | GitHub resource discovery and evidence collection. |
+| `@inugaya/rules-github`    | `packages/rules-github`    | Built-in GitHub evidence evaluation rules.         |
+| `@inugaya/reporter-json`   | `packages/reporter-json`   | JSON report output.                                |
+| `@inugaya/reporter-html`   | `packages/reporter-html`   | Portable HTML reporter and dashboard.              |
 
-The shared `@kypa/sdk`, `@kypa/core`, and `@kypa/action` packages retain their existing names. The private `@kypa/cli` package provides local execution from the workspace. Use the same role-based naming for future built-in component packages. These names do not imply an external plugin API or npm publication.
+The shared `@inugaya/sdk`, `@inugaya/core`, and `@inugaya/action` packages retain their existing names. The private `@inugaya/cli` package provides local execution from the workspace. Use the same role-based naming for future built-in component packages. These names do not imply an external plugin API or npm publication.
 
 Avoid circular dependencies and unnecessary packages. Internal workspace packages do not imply npm publication. Keep GitHub Actions as the primary distribution. The private CLI adapter calls the common runner directly; do not make the Action invoke the CLI or introduce a subprocess boundary between adapters and the runner. Do not publish the CLI to npm. Keep the TypeScript source on the main development branch and generate compiled Action JavaScript in a separate release commit before tagging it. Maintain the Action and common runner in the same repository.
 
@@ -84,7 +84,7 @@ Repository-shaped scenarios belong in `tests/fixtures/repositories/`, with real 
 
 Use local fixture-based Vitest unit tests for pure rules, policy validation, and report rendering. Add runner integration tests using fake collectors, controlled time, and temporary output directories to verify orchestration, partial coverage, and fatal failures without GitHub credentials or the Actions runtime. Test the Action adapter with mocked toolkit inputs/outputs, including failure-policy mapping and safe credential handling. Verify built artifacts and the actual Action in CI for runtime and GitHub integration behavior that local tests cannot establish.
 
-Keep local argument parsing, environment token handling, output, and exit codes in @kypa/cli. Use Node.js parseArgs rather than adding a command framework for the small interface. Read GH_TOKEN with GITHUB_TOKEN as a fallback; never accept tokens as command-line arguments or log arbitrary errors. Run pnpm build followed by pnpm cli from the repository root. The CLI supports --config, --fail-on, and --help. It returns 0 for a generated report accepted by the failure policy, 1 for a report rejected by that policy, 2 for fatal errors, and 130 for cancellation. Keep Ctrl+C handling in the process entry point. Unit tests cover argument/error handling, and the bundled CLI smoke test exercises the same runner and reporters as the Action. Local fixture success does not prove remote permissions or hosted Actions behavior.
+Keep local argument parsing, environment token handling, output, and exit codes in @inugaya/cli. Use Node.js parseArgs rather than adding a command framework for the small interface. Read GH_TOKEN with GITHUB_TOKEN as a fallback; never accept tokens as command-line arguments or log arbitrary errors. Run pnpm build followed by pnpm cli from the repository root. The CLI supports --config, --fail-on, and --help. It returns 0 for a generated report accepted by the failure policy, 1 for a report rejected by that policy, 2 for fatal errors, and 130 for cancellation. Keep Ctrl+C handling in the process entry point. Unit tests cover argument/error handling, and the bundled CLI smoke test exercises the same runner and reporters as the Action. Local fixture success does not prove remote permissions or hosted Actions behavior.
 
 ## Evaluation and reports
 

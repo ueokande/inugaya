@@ -1,6 +1,6 @@
 import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
-import type { Reporter } from "@kypa/sdk";
+import type { Reporter } from "@inugaya/sdk";
 
 export function createHtmlReporter(assetsDirectory: string): Reporter {
   return {
@@ -20,7 +20,7 @@ export function createHtmlReporter(assetsDirectory: string): Reporter {
       );
       await fsPromises.mkdir(path.dirname(destination), { recursive: true });
       const stage = await fsPromises.mkdtemp(
-        path.join(path.dirname(destination), ".kypa-html-"),
+        path.join(path.dirname(destination), ".inugaya-html-"),
       );
       try {
         await fsPromises.cp(assetsDirectory, stage, {

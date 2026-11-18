@@ -1,22 +1,22 @@
 # Getting started
 
-> Unreleased first-release workflow. Kypa has an initial source implementation, but the illustrative Action release references below are not available yet.
+> Unreleased first-release workflow. Inugaya has an initial source implementation, but the illustrative Action release references below are not available yet.
 
 ## Prepare central execution
 
-Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy and Actions workflow. Targets need no Kypa workflow or settings changes. Confirm that Actions is available and choose an access-controlled static host for the HTML dashboard. The example workflow uses private GitHub Pages, but it is not required by the reporter.
+Create an internal execution repository in your GitHub Enterprise Cloud organization to hold the central policy and Actions workflow. Targets need no Inugaya workflow or settings changes. Confirm that Actions is available and choose an access-controlled static host for the HTML dashboard. The example workflow uses private GitHub Pages, but it is not required by the reporter.
 
-The primary distributed entry point is the root GitHub Action in `ueokande/kypa`. No CLI is distributed through npm. You do not need a package manifest, pnpm, a local Kypa installation, or a consumer-side build to use the released Action.
+The primary distributed entry point is the root GitHub Action in `ueokande/inugaya`. No CLI is distributed through npm. You do not need a package manifest, pnpm, a local Inugaya installation, or a consumer-side build to use the released Action.
 
 ## Configure authentication and hosting
 
-Create a PAT with existing access to the intended repositories and the permissions required by selected rules. Organization approval or SSO authorization may be required. Follow [authentication](authentication.md) and store the PAT securely as the central repository's `KYPA_PAT` Actions secret. Never place literal tokens in commands, policy files, workflows, or source.
+Create a PAT with existing access to the intended repositories and the permissions required by selected rules. Organization approval or SSO authorization may be required. Follow [authentication](authentication.md) and store the PAT securely as the central repository's `INUGAYA_PAT` Actions secret. Never place literal tokens in commands, policy files, workflows, or source.
 
 Configure access restrictions on the chosen static host before deployment. If using GitHub Pages, set its build source to GitHub Actions and explicitly configure restricted Pages visibility. Internal repository visibility alone does not make Pages private. Verify the intended viewer restrictions before publishing sensitive results. Collection uses the PAT; Pages deployment uses GITHUB_TOKEN/OIDC separately.
 
 ## Create the policy
 
-Commit `kypa.yaml` in the central repository:
+Commit `inugaya.yaml` in the central repository:
 
 ```yaml
 version: 1
@@ -36,11 +36,11 @@ reporters:
       basePath: /
 ```
 
-Replace `example-org` with your organization. This example uses `basePath: /`; for a project site, use the actual deployment path, such as `/kypa-monitor/`. See [configuration](configuration.md) for target selection, parameters, severity, and output paths.
+Replace `example-org` with your organization. This example uses `basePath: /`; for a project site, use the actual deployment path, such as `/inugaya-monitor/`. See [configuration](configuration.md) for target selection, parameters, severity, and output paths.
 
 ## Add the workflow and run it
 
-Copy the complete [GitHub Actions workflow](github-action.md) into `.github/workflows/kypa.yaml`. Once a release exists, select its tag or reviewed full release-commit SHA. The tagged commit contains compiled Action JavaScript; the development branch and its source commit SHA are not supported runnable Action references.
+Copy the complete [GitHub Actions workflow](github-action.md) into `.github/workflows/inugaya.yaml`. Once a release exists, select its tag or reviewed full release-commit SHA. The tagged commit contains compiled Action JavaScript; the development branch and its source commit SHA are not supported runnable Action references.
 
 Commit the policy and workflow to the central repository's default branch. Trigger `workflow_dispatch` from the Actions UI. The Action validates configuration, discovers targets, collects evidence, evaluates selected rules, and writes `report/report.json` and `site/` on the runner. Validation does not establish remote access; collection must succeed separately.
 

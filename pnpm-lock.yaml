@@ -35,49 +35,49 @@ importers:
       '@actions/core':
         specifier: 3.0.1
         version: 3.0.1
-      '@kypa/core':
+      '@inugaya/core':
         specifier: workspace:*
         version: link:../core
-      '@kypa/provider-github':
+      '@inugaya/provider-github':
         specifier: workspace:*
         version: link:../provider-github
-      '@kypa/reporter-html':
+      '@inugaya/reporter-html':
         specifier: workspace:*
         version: link:../reporter-html
-      '@kypa/reporter-json':
+      '@inugaya/reporter-json':
         specifier: workspace:*
         version: link:../reporter-json
-      '@kypa/rules-github':
+      '@inugaya/rules-github':
         specifier: workspace:*
         version: link:../rules-github
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
 
   packages/cli:
     dependencies:
-      '@kypa/core':
+      '@inugaya/core':
         specifier: workspace:*
         version: link:../core
-      '@kypa/provider-github':
+      '@inugaya/provider-github':
         specifier: workspace:*
         version: link:../provider-github
-      '@kypa/reporter-html':
+      '@inugaya/reporter-html':
         specifier: workspace:*
         version: link:../reporter-html
-      '@kypa/reporter-json':
+      '@inugaya/reporter-json':
         specifier: workspace:*
         version: link:../reporter-json
-      '@kypa/rules-github':
+      '@inugaya/rules-github':
         specifier: workspace:*
         version: link:../rules-github
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
 
   packages/core:
     dependencies:
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
       yaml:
@@ -89,10 +89,10 @@ importers:
 
   packages/provider-github:
     dependencies:
-      '@kypa/core':
+      '@inugaya/core':
         specifier: workspace:*
         version: link:../core
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
       octokit:
@@ -110,7 +110,7 @@ importers:
 
   packages/reporter-html:
     dependencies:
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
     devDependencies:
@@ -120,13 +120,13 @@ importers:
 
   packages/reporter-json:
     dependencies:
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
 
   packages/rules-github:
     dependencies:
-      '@kypa/sdk':
+      '@inugaya/sdk':
         specifier: workspace:*
         version: link:../sdk
       yaml:
