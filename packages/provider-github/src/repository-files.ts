@@ -1,6 +1,7 @@
 import { FatalError } from "@inugaya/sdk";
 import { z } from "zod";
 import type { GitHubClient } from "./client.js";
+import type { RepositoryDiskCache } from "./disk-cache.js";
 import { EvidenceError } from "./errors.js";
 
 const treeSchema = z.object({
@@ -36,7 +37,8 @@ export function createRepositoryFiles(
   api: GitHubClient,
   snapshot: { repository: string; commit: string; tree: string },
   concurrency: number,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  cache: RepositoryDiskCache | undefined,
 ): RepositoryFiles {
   const base = repositoryPath(snapshot.repository);
   let entries: Promise<TreeEntry[]> | undefined;
@@ -51,6 +53,7 @@ export function createRepositoryFiles(
         snapshot.tree,
         concurrency,
         signal,
+        cache,
       );
       return entries;
     },
@@ -64,14 +67,22 @@ export function createRepositoryFiles(
       let content = blobs.get(entry.sha);
       if (!content) {
         content = (async () => {
-          const blob = blobSchema.parse(
-            await api.get(`${base}/git/blobs/${entry.sha}`, signal),
-          );
+          const key = `blob:${entry.sha}`;
+          const cached = cache && blobSchema.safeParse(await cache.read(key));
+          signal?.throwIfAborted();
+          const blob =
+            cached?.success && cached.data.size <= 1_048_576
+              ? cached.data
+              : blobSchema.parse(
+                  await api.get(`${base}/git/blobs/${entry.sha}`, signal),
+                );
           if (blob.size > 1_048_576)
             throw new EvidenceError(
               "FILE_TOO_LARGE",
               "A repository file exceeds the 1 MiB collection limit. File coverage is incomplete.",
             );
+          if (!cached?.success || blob !== cached.data)
+            await cache?.write(key, blob);
           return Buffer.from(blob.content, "base64").toString("utf8");
         })();
         blobs.set(entry.sha, content);
@@ -86,32 +97,60 @@ async function readTree(
   endpoint: string,
   root: string,
   concurrency: number,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  cache: RepositoryDiskCache | undefined,
 ): Promise<TreeEntry[]> {
+  const subtreeSchema = z.object({
+    tree: treeSchema.shape.tree,
+    split: z.boolean(),
+  });
+  async function fetchSubtree(sha: string) {
+    const key = `tree:${sha}`;
+    if (cache) {
+      const cached = subtreeSchema.safeParse(await cache.read(key));
+      signal?.throwIfAborted();
+      if (cached.success) return cached.data;
+    }
+
+    const recursive = treeSchema.parse(
+      await api.get(`${endpoint}/${sha}?recursive=1`, signal),
+    );
+    if (!recursive.truncated) {
+      const subtree = { tree: recursive.tree, split: false };
+      await cache?.write(key, subtree);
+      return subtree;
+    }
+
+    // Split only the subtrees that exceed the recursive response limit.
+    const directory = treeSchema.parse(
+      await api.get(`${endpoint}/${sha}`, signal),
+    );
+    if (directory.truncated) {
+      throw new EvidenceError(
+        "TRUNCATED_TREE",
+        "GitHub returned a truncated directory tree. File coverage is incomplete; the full repository tree must be readable.",
+      );
+    }
+    const subtree = { tree: directory.tree, split: true };
+    await cache?.write(key, subtree);
+    return subtree;
+  }
+
   const pending = [{ sha: root, prefix: "" }];
   const entries: TreeEntry[] = [];
+  // Identical Git trees can appear at multiple paths in the same snapshot.
+  const subtrees = new Map<string, ReturnType<typeof fetchSubtree>>();
   while (pending.length) {
     signal?.throwIfAborted();
     const batch = pending.splice(-concurrency);
     const results = await Promise.allSettled(
       batch.map(async ({ sha, prefix }) => {
-        const recursive = treeSchema.parse(
-          await api.get(`${endpoint}/${sha}?recursive=1`, signal),
-        );
-        if (!recursive.truncated)
-          return { tree: recursive.tree, prefix, split: false };
-
-        // Split only the subtrees that exceed the recursive response limit.
-        const directory = treeSchema.parse(
-          await api.get(`${endpoint}/${sha}`, signal),
-        );
-        if (directory.truncated) {
-          throw new EvidenceError(
-            "TRUNCATED_TREE",
-            "GitHub returned a truncated directory tree. File coverage is incomplete; the full repository tree must be readable.",
-          );
+        let subtree = subtrees.get(sha);
+        if (!subtree) {
+          subtree = fetchSubtree(sha);
+          subtrees.set(sha, subtree);
         }
-        return { tree: directory.tree, prefix, split: true };
+        return { ...(await subtree), prefix };
       }),
     );
     signal?.throwIfAborted();

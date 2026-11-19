@@ -52,6 +52,18 @@ python3 -m http.server 8000 --bind 127.0.0.1 --directory site
 
 Open `http://localhost:8000/`.
 
+## Reuse Git data across scans
+
+Pass `--cache-dir` with a directory you control to cache complete Git tree responses and scanned file contents by SHA. Use the same directory on subsequent runs:
+
+```sh
+pnpm cli --config ./inugaya.yaml --cache-dir "$HOME/.cache/inugaya"
+```
+
+The CLI checks access and resolves the current default-branch commit before using cached data. GitHub settings such as branch protection are fetched on each scan. Cache entries are scoped to the repository and collection token. Changing tokens results in a cold cache.
+
+On systems with Unix file permissions, Inugaya saves cache files under the private `inugaya-github-v1` subdirectory. These files can contain private repository data. Use a dedicated local directory and keep it out of shared CI caches, artifacts, and version control. An inaccessible or corrupt cache falls back to GitHub. Each CLI process stops adding entries when its accounted usage reaches 512 MiB. Concurrent writers may collectively exceed that limit. To reclaim space, stop scans using that directory and delete its `inugaya-github-v1` subdirectory.
+
 ## Failure policy
 
 With `--fail-on violation`, error-level findings and scan errors cause exit code `1`; warn-level findings alone do not. With `--fail-on error`, only scan errors cause exit code `1`. The CLI summary counts violations (error-level findings), warning findings, and scan errors separately.

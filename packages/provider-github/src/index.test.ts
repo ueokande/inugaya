@@ -121,9 +121,10 @@ test.each([false, true])(
   "walks directory trees after a truncated recursive response (truncated child: %s)",
   async (truncated) => {
     const github = "b".repeat(40);
-    const workflows = "c".repeat(40);
+    const nested = "c".repeat(40);
     const blob = "d".repeat(40);
-    const source = "jobs: {build: {steps: [{uses: actions/checkout@v6}]}}";
+    const source =
+      "runs: {using: composite, steps: [{uses: actions/checkout@v6}]}";
     const request = vi.fn(
       transport((path) => {
         const tree = "/repos/org/repo-1/git/trees";
@@ -137,6 +138,7 @@ test.each([false, true])(
               truncated: false,
               tree: [
                 { path: ".github", sha: github, type: "tree", mode: "040000" },
+                { path: "mirror", sha: github, type: "tree", mode: "040000" },
               ],
             };
           case `${tree}/${github}?recursive=1`:
@@ -144,7 +146,7 @@ test.each([false, true])(
               truncated,
               tree: [
                 {
-                  path: "workflows/ci.yml",
+                  path: "nested/action.yml",
                   sha: blob,
                   type: "blob",
                   mode: "100644",
@@ -156,19 +158,19 @@ test.each([false, true])(
               truncated: false,
               tree: [
                 {
-                  path: "workflows",
-                  sha: workflows,
+                  path: "nested",
+                  sha: nested,
                   type: "tree",
                   mode: "040000",
                 },
               ],
             };
-          case `${tree}/${workflows}?recursive=1`:
-          case `${tree}/${workflows}`:
+          case `${tree}/${nested}?recursive=1`:
+          case `${tree}/${nested}`:
             return {
               truncated,
               tree: [
-                { path: "ci.yml", sha: blob, type: "blob", mode: "100644" },
+                { path: "action.yml", sha: blob, type: "blob", mode: "100644" },
               ],
             };
           case `/repos/org/repo-1/git/blobs/${blob}`:
@@ -202,7 +204,11 @@ test.each([false, true])(
             data: {
               references: [
                 {
-                  path: ".github/workflows/ci.yml",
+                  path: ".github/nested/action.yml",
+                  reference: "actions/checkout@v6",
+                },
+                {
+                  path: "mirror/nested/action.yml",
                   reference: "actions/checkout@v6",
                 },
               ],

@@ -24,6 +24,7 @@ export interface CliDependencies {
     token: string,
     signal?: AbortSignal,
     log?: (message: string) => void,
+    cacheDirectory?: string,
   ) => Promise<Report>;
   stdout: (message: string) => void;
   stderr: (message: string) => void;
@@ -31,9 +32,13 @@ export interface CliDependencies {
 
 const defaults: CliDependencies = {
   load: loadPolicy,
-  scan: (policy, directory, digest, token, signal, log) =>
+  scan: (policy, directory, digest, token, signal, log, cacheDirectory) =>
     runScan(policy, {
-      provider: createGitHubProvider({ token, ...policy.scan }),
+      provider: createGitHubProvider({
+        token,
+        ...policy.scan,
+        ...(cacheDirectory ? { cacheDirectory } : {}),
+      }),
       rules: builtInRules,
       reporters: [
         jsonReporter,
@@ -59,6 +64,7 @@ Scan GitHub repositories using a Inugaya policy.
 
 Options:
   -c, --config <path>    Policy file (default: inugaya.yaml)
+      --cache-dir <path>  Reuse Git data from a private local cache
       --fail-on <mode>   never, violation, or error (default: never)
   -h, --help             Show this help
 
@@ -71,12 +77,18 @@ export async function run(
   dependencies: CliDependencies = defaults,
   signal?: AbortSignal,
 ): Promise<number> {
-  let values: { config?: string; "fail-on"?: string; help?: boolean };
+  let values: {
+    config?: string;
+    "fail-on"?: string;
+    "cache-dir"?: string;
+    help?: boolean;
+  };
   try {
     ({ values } = util.parseArgs({
       args,
       options: {
         config: { type: "string", short: "c", default: "inugaya.yaml" },
+        "cache-dir": { type: "string" },
         "fail-on": { type: "string", default: "never" },
         help: { type: "boolean", short: "h" },
       },
@@ -117,6 +129,7 @@ export async function run(
       token,
       signal,
       (message) => dependencies.stderr(message.replaceAll(token, "***")),
+      values["cache-dir"] ? path.resolve(values["cache-dir"]) : undefined,
     );
     const counts = findingCounts(report);
     dependencies.stdout(
