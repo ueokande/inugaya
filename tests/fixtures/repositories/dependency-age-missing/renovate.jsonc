@@ -1,0 +1,4 @@
+{
+  // The first supported Renovate configuration file wins.
+  "minimumReleaseAge": "0 days",
+}

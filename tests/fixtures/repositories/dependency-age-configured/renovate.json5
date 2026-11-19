@@ -1,0 +1,4 @@
+{
+  // Explicit setting in a package rule.
+  packageRules: [{ matchManagers: ['npm'], minimumReleaseAge: '1 week 2 days' }],
+}

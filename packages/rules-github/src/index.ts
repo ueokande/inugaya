@@ -1,8 +1,14 @@
 import type { Evidence, Rule } from "@inugaya/sdk";
 import { z } from "zod";
+import {
+  dependabotCooldown,
+  renovateMinimumReleaseAge,
+} from "./dependency-release-age.js";
 import { actionReferences, isFullSha } from "./evidence.js";
 import { actionsLockfile } from "./lockfile.js";
 import { pinnedDependencies } from "./pinning.js";
+
+import { toolReleaseAgeRules } from "./tool-release-age.js";
 
 export { actionsLockfile } from "./lockfile.js";
 export { pinnedDependencies } from "./pinning.js";
@@ -86,4 +92,7 @@ export const builtInRules: readonly Rule[] = [
   actionsLockfile,
   pinnedDependencies,
   requiredReviews,
+  renovateMinimumReleaseAge,
+  dependabotCooldown,
+  ...toolReleaseAgeRules,
 ];

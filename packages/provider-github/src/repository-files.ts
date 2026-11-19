@@ -63,7 +63,7 @@ export function createRepositoryFiles(
       if (entry.type !== "blob" || !["100644", "100755"].includes(entry.mode)) {
         throw new EvidenceError(
           "UNSUPPORTED_FILE",
-          "A workflow, Action manifest, or lockfile is a symlink or another unsupported file type. Use regular files for complete scanning.",
+          "A repository file is a symlink or another unsupported file type. Use regular files for complete scanning.",
         );
       }
       let content = blobs.get(entry.sha);
@@ -75,7 +75,7 @@ export function createRepositoryFiles(
           if (blob.size > 1_048_576)
             throw new EvidenceError(
               "FILE_TOO_LARGE",
-              "A workflow, Action manifest, or lockfile exceeds the 1 MiB collection limit. File coverage is incomplete.",
+              "A repository file exceeds the 1 MiB collection limit. File coverage is incomplete.",
             );
           return Buffer.from(blob.content, "base64").toString("utf8");
         })();
