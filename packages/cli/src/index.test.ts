@@ -70,6 +70,7 @@ test.each([
       "digest",
       token,
       undefined,
+      expect.any(Function),
     );
     expect(deps.stdout).toHaveBeenCalledWith(
       expect.stringContaining("Status: partial"),

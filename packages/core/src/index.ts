@@ -24,6 +24,7 @@ export async function runScan(
     now?: () => Date;
     runId?: () => string;
     signal?: AbortSignal;
+    log?: (message: string) => void;
   },
 ): Promise<Report> {
   const now = dependencies.now ?? (() => new Date());
@@ -49,6 +50,7 @@ export async function runScan(
   }
   const startedAt = now().toISOString();
   dependencies.signal?.throwIfAborted();
+  dependencies.log?.("discovering repositories…");
   const discovery = await dependencies.provider.discover(
     policy.targets,
     dependencies.signal,
@@ -85,6 +87,12 @@ export async function runScan(
   // Resource iteration is sequential; the provider bounds concurrent API requests.
   for (const resource of report.resources) {
     dependencies.signal?.throwIfAborted();
+    const name = /^[\w.-]+\/[\w.-]+$/.test(resource.name)
+      ? ` (${resource.name})`
+      : "";
+    dependencies.log?.(
+      `scanning repository ${report.scope.evaluated + 1}/${report.scope.discovered}${name}…`,
+    );
     const applicable = policy.rules.filter((selected) =>
       ruleMap
         .get(selected.id)
@@ -217,6 +225,10 @@ export async function runScan(
   report.run.status = report.errors.length ? "partial" : "complete";
   for (const [index, selected] of policy.reporters.entries()) {
     dependencies.signal?.throwIfAborted();
+    const name = /^[\w.-]+$/.test(selected.name) ? ` (${selected.name})` : "";
+    dependencies.log?.(
+      `writing report ${index + 1}/${policy.reporters.length}${name}…`,
+    );
     try {
       await reporterMap.get(selected.name)?.write(report, selected.options, {
         policyDirectory: dependencies.policyDirectory,

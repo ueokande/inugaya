@@ -223,3 +223,13 @@ test("warning evaluations remain failures but do not fail violation policy; coll
   expect(shouldFail(partial, "violation")).toBe(true);
   expect(shouldFail(partial, "error")).toBe(true);
 });
+
+test("logs each scan stage once in order", async () => {
+  const log = vi.fn();
+  await run({ log });
+  expect(log.mock.calls).toEqual([
+    ["discovering repositories…"],
+    ["scanning repository 1/1…"],
+    [`writing report 1/1 (${reporter.id})…`],
+  ]);
+});
