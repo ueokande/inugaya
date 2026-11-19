@@ -43,20 +43,7 @@ export function createRepositoryFiles(
     repository: snapshot.repository,
     commit: snapshot.commit,
     entries() {
-      entries ??= (async () => {
-        const result = treeSchema.parse(
-          await api.get(
-            `${base}/git/trees/${snapshot.tree}?recursive=1`,
-            signal,
-          ),
-        );
-        if (result.truncated)
-          throw new EvidenceError(
-            "TRUNCATED_TREE",
-            "GitHub returned a truncated repository tree. File coverage is incomplete; the full repository tree must be readable.",
-          );
-        return result.tree;
-      })();
+      entries ??= readTree(api, `${base}/git/trees`, snapshot.tree, signal);
       return entries;
     },
     async read(entry) {
@@ -84,4 +71,37 @@ export function createRepositoryFiles(
       return content;
     },
   };
+}
+
+async function readTree(
+  api: GitHubClient,
+  endpoint: string,
+  root: string,
+  signal?: AbortSignal,
+): Promise<TreeEntry[]> {
+  const result = treeSchema.parse(
+    await api.get(`${endpoint}/${root}?recursive=1`, signal),
+  );
+  if (!result.truncated) return result.tree;
+
+  // Rebuild the listing from the same snapshot, discarding the partial tree.
+  const entries: TreeEntry[] = [];
+  async function visit(sha: string, prefix: string): Promise<void> {
+    const directory = treeSchema.parse(
+      await api.get(`${endpoint}/${sha}`, signal),
+    );
+    if (directory.truncated) {
+      throw new EvidenceError(
+        "TRUNCATED_TREE",
+        "GitHub returned a truncated directory tree. File coverage is incomplete; the full repository tree must be readable.",
+      );
+    }
+    for (const entry of directory.tree) {
+      const path = prefix + entry.path;
+      entries.push({ ...entry, path });
+      if (entry.type === "tree") await visit(entry.sha, `${path}/`);
+    }
+  }
+  await visit(root, "");
+  return entries;
 }

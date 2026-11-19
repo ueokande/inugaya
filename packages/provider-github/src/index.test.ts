@@ -117,35 +117,93 @@ test.each([false, true])(
   },
 );
 
-test("truncated trees cannot become successful empty evaluations", async () => {
-  const provider = createGitHubProvider({
-    ...settings,
-    fetch: transport((path) => {
-      if (path.includes("/commits/")) {
-        return { sha, commit: { tree: { sha } } };
-      }
-      if (path.includes("/trees/")) {
-        return { truncated: true, tree: [] };
-      }
-      return repository();
-    }),
-  });
-  const resource = (
-    await provider.discover({
-      ...targets,
-      orgs: [],
-      repos: ["org/repo-1"],
-    })
-  ).resources[0];
-  if (!resource) {
-    throw new Error("Missing fixture resource");
-  }
-  expect(
-    (await provider.collect(resource, ["github/action-references@1"]))[
-      "github/action-references@1"
-    ],
-  ).toMatchObject({ state: "unavailable", code: "TRUNCATED_TREE" });
-});
+test.each([false, true])(
+  "walks directory trees after a truncated recursive response (truncated child: %s)",
+  async (truncated) => {
+    const github = "b".repeat(40);
+    const workflows = "c".repeat(40);
+    const blob = "d".repeat(40);
+    const source = "jobs: {build: {steps: [{uses: actions/checkout@v6}]}}";
+    const request = vi.fn(
+      transport((path) => {
+        const tree = "/repos/org/repo-1/git/trees";
+        switch (path) {
+          case "/repos/org/repo-1/commits/main":
+            return { sha, commit: { tree: { sha } } };
+          case `${tree}/${sha}?recursive=1`:
+            return { truncated: true, tree: [] };
+          case `${tree}/${sha}`:
+            return {
+              truncated: false,
+              tree: [
+                { path: ".github", sha: github, type: "tree", mode: "040000" },
+              ],
+            };
+          case `${tree}/${github}`:
+            return {
+              truncated: false,
+              tree: [
+                {
+                  path: "workflows",
+                  sha: workflows,
+                  type: "tree",
+                  mode: "040000",
+                },
+              ],
+            };
+          case `${tree}/${workflows}`:
+            return {
+              truncated,
+              tree: [
+                { path: "ci.yml", sha: blob, type: "blob", mode: "100644" },
+              ],
+            };
+          case `/repos/org/repo-1/git/blobs/${blob}`:
+            return {
+              encoding: "base64",
+              content: Buffer.from(source).toString("base64"),
+              size: source.length,
+            };
+          case "/repos/org/repo-1":
+            return repository();
+          default:
+            throw new Error(`Unexpected request: ${path}`);
+        }
+      }),
+    );
+    const provider = createGitHubProvider({ ...settings, fetch: request });
+    const [resource] = (
+      await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
+    ).resources;
+    if (!resource) throw new Error("Missing fixture resource");
+
+    const evidence = await provider.collect(resource, [
+      "github/action-references@1",
+      "github/actions-lockfile@1",
+    ]);
+    expect(evidence["github/action-references@1"]).toMatchObject(
+      truncated
+        ? { state: "unavailable", code: "TRUNCATED_TREE" }
+        : {
+            state: "available",
+            data: {
+              references: [
+                {
+                  path: ".github/workflows/ci.yml",
+                  reference: "actions/checkout@v6",
+                },
+              ],
+            },
+          },
+    );
+    expect(evidence["github/actions-lockfile@1"]).toMatchObject(
+      truncated
+        ? { state: "unavailable", code: "TRUNCATED_TREE" }
+        : { state: "available", data: { lockfile: null } },
+    );
+    expect(request).toHaveBeenCalledTimes(truncated ? 6 : 7);
+  },
+);
 
 test("confirmed empty Git repositories are not applicable despite a default branch name", async () => {
   const provider = createGitHubProvider({
