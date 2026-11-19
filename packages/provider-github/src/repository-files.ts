@@ -1,3 +1,4 @@
+import { FatalError } from "@inugaya/sdk";
 import { z } from "zod";
 import type { GitHubClient } from "./client.js";
 import { EvidenceError } from "./errors.js";
@@ -34,6 +35,7 @@ export function repositoryPath(name: string): string {
 export function createRepositoryFiles(
   api: GitHubClient,
   snapshot: { repository: string; commit: string; tree: string },
+  concurrency: number,
   signal?: AbortSignal,
 ): RepositoryFiles {
   const base = repositoryPath(snapshot.repository);
@@ -43,7 +45,13 @@ export function createRepositoryFiles(
     repository: snapshot.repository,
     commit: snapshot.commit,
     entries() {
-      entries ??= readTree(api, `${base}/git/trees`, snapshot.tree, signal);
+      entries ??= readTree(
+        api,
+        `${base}/git/trees`,
+        snapshot.tree,
+        concurrency,
+        signal,
+      );
       return entries;
     },
     async read(entry) {
@@ -77,31 +85,54 @@ async function readTree(
   api: GitHubClient,
   endpoint: string,
   root: string,
+  concurrency: number,
   signal?: AbortSignal,
 ): Promise<TreeEntry[]> {
-  const result = treeSchema.parse(
-    await api.get(`${endpoint}/${root}?recursive=1`, signal),
-  );
-  if (!result.truncated) return result.tree;
-
-  // Rebuild the listing from the same snapshot, discarding the partial tree.
+  const pending = [{ sha: root, prefix: "" }];
   const entries: TreeEntry[] = [];
-  async function visit(sha: string, prefix: string): Promise<void> {
-    const directory = treeSchema.parse(
-      await api.get(`${endpoint}/${sha}`, signal),
+  while (pending.length) {
+    signal?.throwIfAborted();
+    const batch = pending.splice(-concurrency);
+    const results = await Promise.allSettled(
+      batch.map(async ({ sha, prefix }) => {
+        const recursive = treeSchema.parse(
+          await api.get(`${endpoint}/${sha}?recursive=1`, signal),
+        );
+        if (!recursive.truncated)
+          return { tree: recursive.tree, prefix, split: false };
+
+        // Split only the subtrees that exceed the recursive response limit.
+        const directory = treeSchema.parse(
+          await api.get(`${endpoint}/${sha}`, signal),
+        );
+        if (directory.truncated) {
+          throw new EvidenceError(
+            "TRUNCATED_TREE",
+            "GitHub returned a truncated directory tree. File coverage is incomplete; the full repository tree must be readable.",
+          );
+        }
+        return { tree: directory.tree, prefix, split: true };
+      }),
     );
-    if (directory.truncated) {
-      throw new EvidenceError(
-        "TRUNCATED_TREE",
-        "GitHub returned a truncated directory tree. File coverage is incomplete; the full repository tree must be readable.",
-      );
-    }
-    for (const entry of directory.tree) {
-      const path = prefix + entry.path;
-      entries.push({ ...entry, path });
-      if (entry.type === "tree") await visit(entry.sha, `${path}/`);
+    signal?.throwIfAborted();
+    const fatal = results.find(
+      (result) =>
+        result.status === "rejected" && result.reason instanceof FatalError,
+    );
+    if (fatal?.status === "rejected") throw fatal.reason;
+
+    for (const result of results) {
+      if (result.status === "rejected") throw result.reason;
+      const { tree, prefix, split } = result.value;
+      if (!prefix && !split) return tree;
+      for (const entry of tree) {
+        const path = prefix + entry.path;
+        entries.push({ ...entry, path });
+        if (split && entry.type === "tree") {
+          pending.push({ sha: entry.sha, prefix: `${path}/` });
+        }
+      }
     }
   }
-  await visit(root, "");
   return entries;
 }

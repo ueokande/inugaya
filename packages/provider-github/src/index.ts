@@ -94,6 +94,7 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           commit: commit.sha,
           tree: commit.commit.tree.sha,
         },
+        options.concurrency,
         signal,
       );
       for (const id of ids) {

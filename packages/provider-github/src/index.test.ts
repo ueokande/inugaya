@@ -139,6 +139,18 @@ test.each([false, true])(
                 { path: ".github", sha: github, type: "tree", mode: "040000" },
               ],
             };
+          case `${tree}/${github}?recursive=1`:
+            return {
+              truncated,
+              tree: [
+                {
+                  path: "workflows/ci.yml",
+                  sha: blob,
+                  type: "blob",
+                  mode: "100644",
+                },
+              ],
+            };
           case `${tree}/${github}`:
             return {
               truncated: false,
@@ -151,6 +163,7 @@ test.each([false, true])(
                 },
               ],
             };
+          case `${tree}/${workflows}?recursive=1`:
           case `${tree}/${workflows}`:
             return {
               truncated,
@@ -201,7 +214,7 @@ test.each([false, true])(
         ? { state: "unavailable", code: "TRUNCATED_TREE" }
         : { state: "available", data: { lockfile: null } },
     );
-    expect(request).toHaveBeenCalledTimes(truncated ? 6 : 7);
+    expect(request).toHaveBeenCalledTimes(truncated ? 8 : 6);
   },
 );
 
