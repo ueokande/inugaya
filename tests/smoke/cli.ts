@@ -109,6 +109,11 @@ for (const scenario of [
       assert.match(child.stderr, /targets.repos/);
       continue;
     }
+    assert.match(child.stderr, /discovering repositories/);
+    assert.match(child.stderr, /scanning repository 1\/1 \(fixture\/target\)/);
+    assert.match(child.stderr, /writing report 1\/2 \(json\)/);
+    assert.doesNotMatch(child.stdout, /scanning repository/);
+    assert.match(child.stderr, /writing report 2\/2 \(html\)/);
     assert.equal(report.run.status, "complete");
     assert.equal(report.findings.length, scenario === "warning" ? 1 : 2);
     assert.equal(

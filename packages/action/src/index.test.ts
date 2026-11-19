@@ -26,6 +26,7 @@ function toolkit(failOn = "never"): Toolkit {
     setOutput: vi.fn(),
     setFailed: vi.fn(),
     warning: vi.fn(),
+    info: vi.fn(),
     summary: {
       addHeading: vi.fn(),
       addRaw: vi.fn(),
@@ -47,7 +48,13 @@ test.each(["never", "violation", "error"])(
     const scan = vi.fn(async () => report);
     await run(core, { load, scan });
     expect(core.setSecret).toHaveBeenCalledWith("secret");
-    expect(scan).toHaveBeenCalledWith({}, "/tmp", "digest", "secret");
+    expect(scan).toHaveBeenCalledWith(
+      {},
+      "/tmp",
+      "digest",
+      "secret",
+      expect.any(Function),
+    );
     expect(core.setOutput).toHaveBeenCalledWith("status", "partial");
     expect(core.setOutput).toHaveBeenCalledWith("violation-count", 1);
     expect(core.summary.write).toHaveBeenCalledOnce();

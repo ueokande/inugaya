@@ -68,6 +68,10 @@ for (const scenario of [
         "utf8",
       ),
     );
+    assert.match(child.stdout, /discovering repositories/);
+    assert.match(child.stdout, /scanning repository 1\/1 \(fixture\/target\)/);
+    assert.match(child.stdout, /writing report 1\/2 \(json\)/);
+    assert.match(child.stdout, /writing report 2\/2 \(html\)/);
     assert.equal(report.run.status, "complete");
     assert.equal(report.findings.length, scenario === "warning" ? 1 : 2);
     assert.equal(

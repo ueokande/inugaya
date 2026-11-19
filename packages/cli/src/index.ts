@@ -1,7 +1,12 @@
 import * as path from "node:path";
 import * as url from "node:url";
 import * as util from "node:util";
-import { loadPolicy, runScan } from "@inugaya/core";
+import {
+  formatScanProgress,
+  loadPolicy,
+  runScan,
+  type ScanProgressListener,
+} from "@inugaya/core";
 import { createGitHubProvider } from "@inugaya/provider-github";
 import { createHtmlReporter } from "@inugaya/reporter-html";
 import { jsonReporter } from "@inugaya/reporter-json";
@@ -23,6 +28,7 @@ export interface CliDependencies {
     digest: string,
     token: string,
     signal?: AbortSignal,
+    onProgress?: ScanProgressListener,
   ) => Promise<Report>;
   stdout: (message: string) => void;
   stderr: (message: string) => void;
@@ -30,7 +36,7 @@ export interface CliDependencies {
 
 const defaults: CliDependencies = {
   load: loadPolicy,
-  scan: (policy, directory, digest, token, signal) =>
+  scan: (policy, directory, digest, token, signal, onProgress) =>
     runScan(policy, {
       provider: createGitHubProvider({ token, ...policy.scan }),
       rules: builtInRules,
@@ -46,6 +52,7 @@ const defaults: CliDependencies = {
       policyDirectory: directory,
       policyDigest: digest,
       ...(signal ? { signal } : {}),
+      ...(onProgress ? { onProgress } : {}),
     }),
   stdout: (message) => process.stdout.write(`${message}\n`),
   stderr: (message) => process.stderr.write(`${message}\n`),
@@ -114,6 +121,8 @@ export async function run(
       loaded.digest,
       token,
       signal,
+      (event) =>
+        dependencies.stderr(formatScanProgress(event).replaceAll(token, "***")),
     );
     const counts = findingCounts(report);
     dependencies.stdout(
