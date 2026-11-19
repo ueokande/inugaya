@@ -65,3 +65,109 @@ test.each([
     fixture.requests.filter((request) => request.includes("/git/trees/")),
   ).toHaveLength(1);
 });
+
+const fixtureResource = {
+  provider: "github",
+  type: "repository",
+  id: "42",
+  name: "fixture/target",
+  url: "https://github.com/fixture/target",
+  metadata: { defaultBranch: "main" },
+};
+
+function fixtureProvider(fetch: typeof globalThis.fetch) {
+  return createGitHubProvider({
+    token: fixtureToken,
+    concurrency: 4,
+    requestTimeoutSeconds: 30,
+    retries: 0,
+    fetch,
+  });
+}
+
+test("a truncated recursive tree still evaluates workflow pins, the lockfile, Renovate, and Dependabot", async () => {
+  const fixture = createRepositoryFixture("dependency-age-configured", {
+    truncatedRecursive: true,
+  });
+  const selected = builtInRules.filter((rule) =>
+    [
+      "actions/pinned-dependencies",
+      "actions/lockfile",
+      "renovate/minimum-release-age",
+      "dependabot/cooldown",
+    ].includes(rule.id),
+  );
+  expect(selected).toHaveLength(4);
+  const resource = structuredClone(fixtureResource);
+  const ids = [
+    "github/dependabot-config@1",
+    ...new Set(
+      selected
+        .flatMap((rule) => rule.requiredEvidence)
+        .filter((id) => id !== "github/dependabot-config@1"),
+    ),
+  ];
+  const evidence = await fixtureProvider(fixture.fetch).collect(resource, ids);
+  for (const rule of selected) {
+    const parameters = rule.validateParameters({});
+    expect(
+      await rule.evaluate(resource, evidence, parameters),
+      rule.id,
+    ).toEqual({
+      applicable: true,
+      findings: [],
+    });
+  }
+  const requests = fixture.requests.filter((request) =>
+    request.includes("/git/trees/"),
+  );
+  expect(requests).toHaveLength(4); // Recursive probe, root, .github, workflows.
+  expect(new Set(requests).size).toBe(requests.length);
+});
+
+test.each([
+  ["dependency-age-configured", undefined, "found", 2],
+  ["no-workflows", undefined, "absent", 1],
+  ["dependency-age-configured", ".github", "unavailable", 2],
+] as const)(
+  "Dependabot reads the known path in %s (%s)",
+  async (name, truncatedDirectory, outcome, reads) => {
+    const fixture = createRepositoryFixture(
+      name,
+      truncatedDirectory === undefined
+        ? { truncatedRecursive: true }
+        : { truncatedRecursive: true, truncatedDirectory },
+    );
+    const id = "github/dependabot-config@1";
+    const evidence = (
+      await fixtureProvider(fixture.fetch).collect(
+        structuredClone(fixtureResource),
+        [id],
+      )
+    )[id];
+    if (outcome === "unavailable") {
+      expect(evidence).toMatchObject({
+        state: "unavailable",
+        code: "TRUNCATED_TREE",
+      });
+    } else {
+      expect(evidence).toMatchObject({
+        state: "available",
+        data:
+          outcome === "absent"
+            ? null
+            : {
+                path: ".github/dependabot.yml",
+                url: expect.stringContaining(`/blob/${fixtureCommit}/`),
+              },
+      });
+    }
+    const requests = fixture.requests.filter((request) =>
+      request.includes("/git/trees/"),
+    );
+    expect(requests).toHaveLength(reads);
+    expect(requests.every((request) => !request.includes("?recursive="))).toBe(
+      true,
+    );
+  },
+);

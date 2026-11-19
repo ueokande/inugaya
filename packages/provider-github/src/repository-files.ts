@@ -23,6 +23,7 @@ export interface RepositoryFiles {
   repository: string;
   commit: string;
   entries(): Promise<TreeEntry[]>;
+  entryAt(path: string): Promise<TreeEntry | undefined>;
   read(entry: TreeEntry): Promise<string>;
 }
 
@@ -38,7 +39,41 @@ export function createRepositoryFiles(
 ): RepositoryFiles {
   const base = repositoryPath(snapshot.repository);
   let entries: Promise<TreeEntry[]> | undefined;
+  let indexed: TreeEntry[] | undefined;
+  const directories = new Map<string, Promise<TreeEntry[]>>();
   const blobs = new Map<string, Promise<string>>();
+
+  function directory(sha: string): Promise<TreeEntry[]> {
+    let pending = directories.get(sha);
+    if (!pending) {
+      pending = (async () => {
+        const result = treeSchema.parse(
+          await api.get(`${base}/git/trees/${sha}`, signal),
+        );
+        if (result.truncated) {
+          throw new EvidenceError(
+            "TRUNCATED_TREE",
+            "GitHub returned a truncated directory tree. The required directory could not be read completely.",
+          );
+        }
+        return result.tree;
+      })();
+      directories.set(sha, pending);
+    }
+    return pending;
+  }
+
+  async function walk(sha: string, prefix: string, result: TreeEntry[]) {
+    signal?.throwIfAborted();
+    for (const entry of await directory(sha)) {
+      const path = prefix + entry.path;
+      result.push({ ...entry, path });
+      if (entry.type === "tree") {
+        await walk(entry.sha, `${path}/`, result);
+      }
+    }
+  }
+
   return {
     repository: snapshot.repository,
     commit: snapshot.commit,
@@ -50,14 +85,42 @@ export function createRepositoryFiles(
             signal,
           ),
         );
-        if (result.truncated)
-          throw new EvidenceError(
-            "TRUNCATED_TREE",
-            "GitHub returned a truncated repository tree. File coverage is incomplete; the full repository tree must be readable.",
-          );
-        return result.tree;
+        if (!result.truncated) {
+          indexed = result.tree;
+        } else {
+          // A truncated recursive response can omit files anywhere in the
+          // repository. Rebuild the index from complete individual trees.
+          const complete: TreeEntry[] = [];
+          await walk(snapshot.tree, "", complete);
+          indexed = complete;
+        }
+        return indexed;
       })();
       return entries;
+    },
+    async entryAt(path) {
+      if (indexed) return indexed.find((entry) => entry.path === path);
+
+      const components = path.split("/");
+      const filename = components.pop();
+      let sha = snapshot.tree;
+      for (const component of components) {
+        const entry = (await directory(sha)).find(
+          (item) => item.path === component,
+        );
+        if (!entry) return undefined;
+        if (entry.type !== "tree") {
+          throw new EvidenceError(
+            "UNSUPPORTED_FILE",
+            "A parent directory of the required file is an unsupported Git entry.",
+          );
+        }
+        sha = entry.sha;
+      }
+      const entry = (await directory(sha)).find(
+        (item) => item.path === filename,
+      );
+      return entry && { ...entry, path };
     },
     async read(entry) {
       if (entry.type !== "blob" || !["100644", "100755"].includes(entry.mode)) {

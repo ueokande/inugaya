@@ -23,11 +23,10 @@ export async function collectDependencyUpdateConfig(
   files: RepositoryFiles,
   tool: "renovate" | "dependabot",
 ) {
-  const entries = await files.entries();
-  const paths = tool === "renovate" ? renovatePaths : [dependabotPath];
-  const entry = paths
-    .map((path) => entries.find((item) => item.path === path))
-    .find((item) => item !== undefined);
+  const entry =
+    tool === "dependabot"
+      ? await files.entryAt(dependabotPath)
+      : await findRenovateConfig(files);
   if (!entry) return null;
 
   const content = await files.read(entry);
@@ -63,6 +62,14 @@ export async function collectDependencyUpdateConfig(
     url: `https://github.com/${files.repository}/blob/${files.commit}/${entry.path}`,
     config,
   };
+}
+
+async function findRenovateConfig(files: RepositoryFiles) {
+  const entries = await files.entries();
+  for (const path of renovatePaths) {
+    const entry = entries.find((item) => item.path === path);
+    if (entry) return entry;
+  }
 }
 
 export function validateJsonc(content: string): void {
