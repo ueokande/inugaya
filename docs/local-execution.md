@@ -44,7 +44,7 @@ pnpm cli --config ./inugaya.yaml
 
 `--config` (short form `-c`) resolves relative to the current working directory and defaults to `inugaya.yaml`. Reporter paths resolve relative to the policy file. Existing output destinations are rejected; choose fresh paths or remove only outputs you intentionally generated before running again. See [configuration](configuration.md) for other targets, rules, and collection settings.
 
-While the scan runs, stderr shows repository discovery, the current repository and total, and report generation. A stage that takes more than 15 seconds prints a reminder every 15 seconds. The command prints scan status and counts to stdout and individual coverage errors, including HTTP status and remediation hints, to stderr. `partial` with zero resources means discovery did not produce scannable targets; zero findings in that case does not establish compliance. JSON and HTML files are written to the configured destinations, including when findings trigger a nonzero exit code. Serve the HTML directory through HTTP, for example:
+While the scan runs, stderr shows repository discovery, the current repository and total, and report generation. Each stage is logged when it starts. The command prints scan status and counts to stdout and individual coverage errors, including HTTP status and remediation hints, to stderr. `partial` with zero resources means discovery did not produce scannable targets; zero findings in that case does not establish compliance. JSON and HTML files are written to the configured destinations, including when findings trigger a nonzero exit code. Serve the HTML directory through HTTP, for example:
 
 ```sh
 python3 -m http.server 8000 --bind 127.0.0.1 --directory site

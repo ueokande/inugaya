@@ -11,39 +11,21 @@ import {
 } from "@inugaya/sdk";
 import packageInfo from "../../../package.json" with { type: "json" };
 
-import { createScanProgress, type ScanProgressListener } from "./progress.js";
-
 export { loadPolicy, matchesPattern, parsePolicy, within } from "./config.js";
-export { formatScanProgress, type ScanProgressListener } from "./progress.js";
-
-interface ScanDependencies {
-  provider: Provider;
-  rules: readonly Rule[];
-  reporters: readonly Reporter[];
-  policyDirectory: string;
-  policyDigest: string;
-  now?: () => Date;
-  runId?: () => string;
-  signal?: AbortSignal;
-  onProgress?: ScanProgressListener;
-}
 
 export async function runScan(
   policy: Policy,
-  dependencies: ScanDependencies,
-): Promise<Report> {
-  const progress = createScanProgress(dependencies.onProgress);
-  try {
-    return await scan(policy, dependencies, progress);
-  } finally {
-    progress.stop();
-  }
-}
-
-async function scan(
-  policy: Policy,
-  dependencies: ScanDependencies,
-  progress: ReturnType<typeof createScanProgress>,
+  dependencies: {
+    provider: Provider;
+    rules: readonly Rule[];
+    reporters: readonly Reporter[];
+    policyDirectory: string;
+    policyDigest: string;
+    now?: () => Date;
+    runId?: () => string;
+    signal?: AbortSignal;
+    log?: (message: string) => void;
+  },
 ): Promise<Report> {
   const now = dependencies.now ?? (() => new Date());
   const ruleMap = new Map(dependencies.rules.map((rule) => [rule.id, rule]));
@@ -68,7 +50,7 @@ async function scan(
   }
   const startedAt = now().toISOString();
   dependencies.signal?.throwIfAborted();
-  progress.start({ stage: "discovery" });
+  dependencies.log?.("discovering repositories…");
   const discovery = await dependencies.provider.discover(
     policy.targets,
     dependencies.signal,
@@ -105,12 +87,12 @@ async function scan(
   // Resource iteration is sequential; the provider bounds concurrent API requests.
   for (const resource of report.resources) {
     dependencies.signal?.throwIfAborted();
-    progress.start({
-      stage: "repository",
-      current: report.scope.evaluated + 1,
-      total: report.scope.discovered,
-      name: resource.name,
-    });
+    const name = /^[\w.-]+\/[\w.-]+$/.test(resource.name)
+      ? ` (${resource.name})`
+      : "";
+    dependencies.log?.(
+      `scanning repository ${report.scope.evaluated + 1}/${report.scope.discovered}${name}…`,
+    );
     const applicable = policy.rules.filter((selected) =>
       ruleMap
         .get(selected.id)
@@ -243,12 +225,10 @@ async function scan(
   report.run.status = report.errors.length ? "partial" : "complete";
   for (const [index, selected] of policy.reporters.entries()) {
     dependencies.signal?.throwIfAborted();
-    progress.start({
-      stage: "report",
-      current: index + 1,
-      total: policy.reporters.length,
-      name: selected.name,
-    });
+    const name = /^[\w.-]+$/.test(selected.name) ? ` (${selected.name})` : "";
+    dependencies.log?.(
+      `writing report ${index + 1}/${policy.reporters.length}${name}…`,
+    );
     try {
       await reporterMap.get(selected.name)?.write(report, selected.options, {
         policyDirectory: dependencies.policyDirectory,

@@ -1,12 +1,7 @@
 import * as path from "node:path";
 import * as url from "node:url";
 import * as core from "@actions/core";
-import {
-  formatScanProgress,
-  loadPolicy,
-  runScan,
-  type ScanProgressListener,
-} from "@inugaya/core";
+import { loadPolicy, runScan } from "@inugaya/core";
 import { createGitHubProvider } from "@inugaya/provider-github";
 import { createHtmlReporter } from "@inugaya/reporter-html";
 import { jsonReporter } from "@inugaya/reporter-json";
@@ -48,13 +43,13 @@ export interface ActionDependencies {
     directory: string,
     digest: string,
     token: string,
-    onProgress?: ScanProgressListener,
+    log?: (message: string) => void,
   ) => Promise<Report>;
 }
 
 const defaults: ActionDependencies = {
   load: loadPolicy,
-  scan: (policy, directory, digest, token, onProgress) =>
+  scan: (policy, directory, digest, token, log) =>
     runScan(policy, {
       provider: createGitHubProvider({ token, ...policy.scan }),
       rules: builtInRules,
@@ -69,7 +64,7 @@ const defaults: ActionDependencies = {
       ],
       policyDirectory: directory,
       policyDigest: digest,
-      ...(onProgress ? { onProgress } : {}),
+      ...(log ? { log } : {}),
     }),
 };
 
@@ -104,8 +99,7 @@ export async function run(
       loaded.directory,
       loaded.digest,
       token,
-      (event) =>
-        toolkit.info(formatScanProgress(event).replaceAll(token, "***")),
+      (message) => toolkit.info(message.replaceAll(token, "***")),
     );
     const counts = findingCounts(report);
     toolkit.setOutput("run-id", report.run.id);

@@ -224,60 +224,12 @@ test("warning evaluations remain failures but do not fail violation policy; coll
   expect(shouldFail(partial, "error")).toBe(true);
 });
 
-test.each(["success", "failure"])(
-  "reports discovery waits and stops reminders after %s",
-  async (outcome) => {
-    vi.useFakeTimers();
-    try {
-      const discovery =
-        Promise.withResolvers<Awaited<ReturnType<Provider["discover"]>>>();
-      const onProgress = vi.fn();
-      const scan = run({
-        provider: { ...provider, discover: () => discovery.promise },
-        onProgress,
-      });
-      expect(onProgress.mock.calls).toEqual([
-        [{ stage: "discovery", waiting: false }],
-      ]);
-      await vi.advanceTimersByTimeAsync(15_000);
-      expect(onProgress).toHaveBeenLastCalledWith({
-        stage: "discovery",
-        waiting: true,
-      });
-
-      if (outcome === "success") {
-        discovery.resolve(await provider.discover(policy.targets));
-        await scan;
-        expect(onProgress.mock.calls.slice(2)).toEqual([
-          [
-            {
-              stage: "repository",
-              current: 1,
-              total: 1,
-              name: resource.name,
-              waiting: false,
-            },
-          ],
-          [
-            {
-              stage: "report",
-              current: 1,
-              total: 1,
-              name: reporter.id,
-              waiting: false,
-            },
-          ],
-        ]);
-      } else {
-        discovery.reject(new Error("Discovery failed."));
-        await expect(scan).rejects.toThrow("Discovery failed.");
-      }
-
-      const count = onProgress.mock.calls.length;
-      await vi.advanceTimersByTimeAsync(30_000);
-      expect(onProgress).toHaveBeenCalledTimes(count);
-    } finally {
-      vi.useRealTimers();
-    }
-  },
-);
+test("logs each scan stage once in order", async () => {
+  const log = vi.fn();
+  await run({ log });
+  expect(log.mock.calls).toEqual([
+    ["discovering repositories…"],
+    ["scanning repository 1/1…"],
+    [`writing report 1/1 (${reporter.id})…`],
+  ]);
+});
