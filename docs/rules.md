@@ -153,3 +153,27 @@ rules:
 - `dependabot/cooldown` checks every version update entry in `.github/dependabot.yml` for at least one positive integer cooldown in `default-days`, `semver-major-days`, `semver-minor-days`, or `semver-patch-days`. Missing configuration or an empty update list is `not-applicable`.
 
 These checks verify explicitly declared settings. They do not expand Renovate presets or inherited settings, calculate effective coverage across package rules or ecosystems, apply Dependabot's platform defaults, or verify waiting periods for security updates. A setting scoped to certain packages or update types can pass. Unreadable or unparseable configuration produces an error. Findings link to the configuration in the scanned commit.
+
+### Package managers and command-line update tools
+
+These rules inspect committed configuration and supported command forms at the repository root. Each rule applies to `github/repository`, defaults to `medium` severity, takes no parameters, and requires Contents read access. They can be enabled independently.
+
+| Rule                          | Setting or command                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm/min-release-age`         | `.npmrc`: `min-release-age=7` (days).                                                                              |
+| `pnpm/minimum-release-age`    | `pnpm-workspace.yaml`: `minimumReleaseAge: 10080` (minutes).                                                       |
+| `yarn/minimal-age-gate`       | `.yarnrc.yml`: `npmMinimalAgeGate: 7d`.                                                                            |
+| `bun/minimum-release-age`     | `bunfig.toml`: `install.minimumReleaseAge = 604800` (numeric seconds).                                             |
+| `deno/minimum-dependency-age` | `deno.json` or `deno.jsonc`: `"minimumDependencyAge": "P7D"`.                                                      |
+| `uv/exclude-newer`            | `uv.toml` or `[tool.uv]` in `pyproject.toml`: `exclude-newer = "7 days"`.                                          |
+| `poetry/min-release-age`      | `poetry.toml`: `solver.min-release-age = 7` (days).                                                                |
+| `composer/cooldown`           | `composer.json`: `config.policy.cooldown.period`, such as `"7 days"`.                                              |
+| `mise/minimum-release-age`    | `mise.toml`: `settings.minimum_release_age = "7d"`.                                                                |
+| `npm-check-updates/cooldown`  | Static `.ncurc` (JSON or YAML) or `ncu --cooldown 7d`.                                                             |
+| `pip/uploaded-prior-to`       | `pip install --uploaded-prior-to P7D`, `PIP_UPLOADED_PRIOR_TO`, or an explicitly referenced repository pip config. |
+
+A rule applies when the tool is identified by its project configuration, lockfile, package manager declaration, or a supported call site. An explicit Node package manager declaration takes precedence over another manager's lockfile alone. A Yarn lockfile alone does not distinguish Modern Yarn from Yarn Classic. A requirements file alone does not establish use of pip. The pnpm rule also supports `minimum-release-age` in `.npmrc` for a declared compatible pnpm 10 release. Deno can read `min-release-age` from `.npmrc` when its own file does not specify `minimumDependencyAge`. If both uv files exist, `uv.toml` is used without falling back to `pyproject.toml`.
+
+The pip and npm-check-updates rules inspect literal invocations in root `package.json` scripts and GitHub Actions `run` steps. They check each supported call site. Command-line options take precedence over settings read by these rules. The pip rule reads literal environment assignments and workflow, job, and step environment declarations. If `PIP_CONFIG_FILE` points to a checked-in file, the rule checks `uploaded-prior-to` in the `[install]` or `[global]` section. Script files invoked indirectly, custom shells, and arbitrary shell control flow are outside the supported command forms. Executable npm-check-updates configuration files are never executed.
+
+A positive relative delay passes. For applicable projects, missing, zero, or disabled settings and fixed historical dates produce findings. Dynamic settings that cannot be determined, malformed files, and unreadable configuration produce errors. Findings link to the file at the scanned commit. The rules do not rely on tool defaults, machine-wide configuration, or CI values injected at runtime. They do not verify actual resolver behavior, package-specific exceptions, or nested project configuration.

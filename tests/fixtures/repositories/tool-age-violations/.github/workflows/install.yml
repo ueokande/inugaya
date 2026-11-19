@@ -1,0 +1,14 @@
+name: Fixture
+on: push
+env:
+  PIP_UPLOADED_PRIOR_TO: P7D
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          PIP_UPLOADED_PRIOR_TO: P0D
+        run: |
+          echo preparing
+          pip install sample
+          pip install --uploaded-prior-to 2025-01-01T00:00:00Z sample

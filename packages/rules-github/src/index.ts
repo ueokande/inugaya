@@ -8,6 +8,8 @@ import { actionReferences, isFullSha } from "./evidence.js";
 import { actionsLockfile } from "./lockfile.js";
 import { pinnedDependencies } from "./pinning.js";
 
+import { toolReleaseAgeRules } from "./tool-release-age.js";
+
 export { actionsLockfile } from "./lockfile.js";
 export { pinnedDependencies } from "./pinning.js";
 
@@ -92,4 +94,5 @@ export const builtInRules: readonly Rule[] = [
   requiredReviews,
   renovateMinimumReleaseAge,
   dependabotCooldown,
+  ...toolReleaseAgeRules,
 ];

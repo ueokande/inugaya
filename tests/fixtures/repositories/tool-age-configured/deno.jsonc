@@ -1,0 +1,4 @@
+{
+  // Wait one week.
+  "minimumDependencyAge": {"age": "P7D", "exclude": ["npm:example"]},
+}

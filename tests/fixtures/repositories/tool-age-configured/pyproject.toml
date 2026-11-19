@@ -1,0 +1,4 @@
+[tool.uv]
+exclude-newer = "7 days"
+[tool.poetry]
+name = "sample"
