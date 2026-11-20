@@ -1,4 +1,4 @@
-import { type Report, resourceKey } from "@inugaya/sdk";
+import { type Report, resourceDisplayName, resourceKey } from "@inugaya/sdk";
 import {
   badge,
   coveragePanel,
@@ -143,7 +143,7 @@ export function renderReport(report: Report): void {
     const rows = document.createDocumentFragment();
     let matches = 0;
     for (const item of evaluations) {
-      const name = repositories.get(item.resource)?.name ?? item.resource;
+      const name = resourceDisplayName(item.resource, repositories);
       if (
         (!attentionOnly || needsAttention(item)) &&
         (!rule.input.value || item.rule === rule.input.value) &&
@@ -191,7 +191,7 @@ export function renderReport(report: Report): void {
       );
     }
     coverage.replaceChildren(
-      coveragePanel(repository?.errors ?? report.errors),
+      coveragePanel(repository?.errors ?? report.errors, repositories),
     );
     all.setAttribute("aria-pressed", String(!key));
     for (const [id, button] of buttons)

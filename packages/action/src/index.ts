@@ -13,6 +13,7 @@ import {
   formatReportError,
   type Policy,
   type Report,
+  resourceKey,
   shouldFail,
 } from "@inugaya/sdk";
 
@@ -111,8 +112,13 @@ export async function run(
     toolkit.summary.addRaw(
       `Status: ${report.run.status}\n\nResources: ${report.scope.evaluated}; violations: ${counts.violations}; warnings: ${counts.warnings}; errors: ${report.errors.length}\n`,
     );
+    const resources = new Map(
+      report.resources.map((resource) => [resourceKey(resource), resource]),
+    );
     for (const error of report.errors) {
-      toolkit.warning(formatReportError(error));
+      toolkit.warning(
+        formatReportError(error, resources).replaceAll(token, "***"),
+      );
     }
     await toolkit.summary.write();
     if (shouldFail(report, failOn)) {

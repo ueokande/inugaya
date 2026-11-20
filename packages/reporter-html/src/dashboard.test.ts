@@ -90,6 +90,12 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   expect(document.querySelector(".detail-pane h2")?.textContent).toBe(
     "org/api",
   );
+  expect(document.querySelector(".coverage-panel")?.textContent).toContain(
+    "org/api",
+  );
+  expect(document.querySelector(".coverage-panel")?.textContent).not.toContain(
+    "github/repository/1",
+  );
   expect(button("org/api").getAttribute("aria-pressed")).toBe("true");
   expect(document.querySelector(".coverage-panel")?.textContent).toContain(
     "Repository lookup timed out.",

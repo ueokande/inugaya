@@ -3,6 +3,7 @@ import {
   type Finding,
   findingCounts,
   type Report,
+  resourceDisplayName,
 } from "@inugaya/sdk";
 
 export function element<K extends keyof HTMLElementTagNameMap>(
@@ -67,7 +68,10 @@ export function scanHeader(report: Report): HTMLElement {
   return header;
 }
 
-export function coveragePanel(errors: Report["errors"]): HTMLElement {
+export function coveragePanel(
+  errors: Report["errors"],
+  resources: ReadonlyMap<string, { name: string }>,
+): HTMLElement {
   const section = element("section", "", "coverage-panel");
   if (!errors.length) return section;
   section.append(element("h3", `Coverage errors (${errors.length})`));
@@ -77,7 +81,12 @@ export function coveragePanel(errors: Report["errors"]): HTMLElement {
     item.append(
       element(
         "strong",
-        [error.phase, error.resource, error.rule, error.code]
+        [
+          error.phase,
+          error.resource && resourceDisplayName(error.resource, resources),
+          error.rule,
+          error.code,
+        ]
           .filter(Boolean)
           .join(" · "),
       ),
