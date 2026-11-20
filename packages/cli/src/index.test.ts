@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import { FatalError, type Policy, type Report } from "@inugaya/sdk";
 import { expect, test, vi } from "vitest";
 import { type CliDependencies, run } from "./index.js";
@@ -71,6 +72,7 @@ test.each([
       token,
       undefined,
       expect.any(Function),
+      undefined,
     );
     expect(deps.stdout).toHaveBeenCalledWith(
       expect.stringContaining("Status: partial"),
@@ -80,6 +82,22 @@ test.each([
     );
   },
 );
+
+test("enables the disk cache only for an explicit directory", async () => {
+  const deps = dependencies();
+  expect(
+    await run(["--cache-dir", "cache"], { GH_TOKEN: "primary" }, deps),
+  ).toBe(0);
+  expect(deps.scan).toHaveBeenCalledWith(
+    {},
+    "/tmp",
+    "digest",
+    "primary",
+    undefined,
+    expect.any(Function),
+    path.resolve("cache"),
+  );
+});
 
 test.each([
   ["never", 0],

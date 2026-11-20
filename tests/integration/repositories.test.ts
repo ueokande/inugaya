@@ -14,6 +14,7 @@ import {
   createRepositoryFixture,
   fixtureCommit,
   fixtureToken,
+  fixtureTree,
   policyFile,
   repositoryDirectory,
 } from "../helpers/github-repository.js";
@@ -191,3 +192,150 @@ test("file caches are shared by evidence collectors but reset for the next colle
   expect(blobs).toHaveLength(4);
   expect(new Set(blobs).size).toBe(2);
 });
+
+test.skipIf(!process.getuid)(
+  "disk cache reuses complete trees and blobs across scans and recovers corrupt entries",
+  async () => {
+    const directory = await fsPromises.mkdtemp(
+      path.join(os.tmpdir(), "inugaya-cache-"),
+    );
+    directories.push(directory);
+    const cacheDirectory = path.join(directory, "cache");
+    const cacheFiles = path.join(cacheDirectory, "inugaya-github-v1");
+    const loaded = await loadPolicy(
+      url.fileURLToPath(policyFile("sha-only")),
+      builtInRules,
+    );
+    const fixture = createRepositoryFixture("duplicate-blobs");
+    const base = "/repos/fixture/target";
+    const originalTree = await fixture.fetch(
+      `https://api.github.com${base}/git/trees/${fixtureTree}?recursive=1`,
+      { headers: { authorization: `token ${fixtureToken}` } },
+    );
+    const original = (await originalTree.json()) as {
+      tree: { path: string; mode: string; type: string; sha: string }[];
+    };
+    const githubTree = "c".repeat(40);
+    const nextCommit = "d".repeat(40);
+    const nextRoot = "e".repeat(40);
+    const docsTree = "f".repeat(40);
+    let changed = false;
+    let denyCommit = false;
+    const fetch: typeof globalThis.fetch = async (input, init) => {
+      const request = String(input).replace("https://api.github.com", "");
+      const root = changed ? nextRoot : fixtureTree;
+      const tree = (sha: string) => `${base}/git/trees/${sha}`;
+      const directoryEntry = (path: string, sha: string) => ({
+        path,
+        sha,
+        type: "tree",
+        mode: "040000",
+      });
+      if (request === `${base}/commits/main`) {
+        fixture.requests.push(request);
+        return denyCommit
+          ? new Response("", { status: 403 })
+          : Response.json({
+              sha: changed ? nextCommit : fixtureCommit,
+              commit: { tree: { sha: root } },
+            });
+      }
+      if (request === `${tree(root)}?recursive=1`) {
+        fixture.requests.push(request);
+        return Response.json({ truncated: true, tree: [] });
+      }
+      if (request === tree(root)) {
+        fixture.requests.push(request);
+        const entries = [directoryEntry(".github", githubTree)];
+        if (changed) entries.push(directoryEntry("docs", docsTree));
+        return Response.json({ truncated: false, tree: entries });
+      }
+      if (request === `${tree(githubTree)}?recursive=1`) {
+        fixture.requests.push(request);
+        return Response.json({
+          truncated: false,
+          tree: original.tree.map((entry) => ({
+            ...entry,
+            path: entry.path.slice(".github/".length),
+          })),
+        });
+      }
+      if (request === `${tree(docsTree)}?recursive=1`) {
+        fixture.requests.push(request);
+        return Response.json({
+          truncated: false,
+          tree: [
+            {
+              path: "README.md",
+              type: "blob",
+              mode: "100644",
+              sha: "1".repeat(40),
+            },
+          ],
+        });
+      }
+      return fixture.fetch(input, init);
+    };
+    const scan = async (useCache: boolean) => {
+      fixture.requests.length = 0;
+      return runScan(
+        { ...loaded.policy, reporters: [] },
+        {
+          provider: createGitHubProvider({
+            token: fixtureToken,
+            ...loaded.policy.scan,
+            retries: 0,
+            ...(useCache ? { cacheDirectory } : {}),
+            now: () => 0,
+            fetch,
+          }),
+          rules: builtInRules,
+          reporters: [],
+          policyDirectory: directory,
+          policyDigest: loaded.digest,
+          now: () => new Date(0),
+          runId: () => "cache-fixture",
+        },
+      );
+    };
+    const gitRequests = () =>
+      fixture.requests.filter((request) => request.includes("/git/"));
+    const baseline = await scan(false);
+    expect(baseline.run.status).toBe("complete");
+    expect(baseline.findings.length).toBeGreaterThan(0);
+    expect(gitRequests()).toHaveLength(4);
+
+    expect(await scan(true)).toEqual(baseline);
+    expect(gitRequests()).toHaveLength(4);
+    expect(await scan(true)).toEqual(baseline);
+    expect(gitRequests()).toEqual([]);
+    expect(fixture.requests).toContain("/repos/fixture/target/commits/main");
+
+    const files = await fsPromises.readdir(cacheFiles);
+    expect(files).toHaveLength(3);
+    for (const file of files) {
+      const filename = path.join(cacheFiles, file);
+      expect((await fsPromises.stat(filename)).mode & 0o777).toBe(0o600);
+      await fsPromises.writeFile(filename, "corrupt");
+    }
+    expect(await scan(true)).toEqual(baseline);
+    expect(gitRequests()).toHaveLength(4);
+
+    changed = true;
+    const updated = await scan(false);
+    expect(updated.resources[0]?.metadata.scannedCommit).toBe(nextCommit);
+    expect(gitRequests()).toHaveLength(5);
+    expect(await scan(true)).toEqual(updated);
+    expect(gitRequests()).toEqual([
+      `${base}/git/trees/${nextRoot}?recursive=1`,
+      `${base}/git/trees/${nextRoot}`,
+      `${base}/git/trees/${docsTree}?recursive=1`,
+    ]);
+
+    denyCommit = true;
+    const denied = await scan(true);
+    expect(denied.run.status).toBe("partial");
+    expect(denied.findings).toEqual([]);
+    expect(gitRequests()).toEqual([]);
+  },
+);

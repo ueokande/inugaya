@@ -8,6 +8,7 @@ import { z } from "zod";
 import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
 import { collectDependencyUpdateConfig } from "./dependency-update-config.js";
 import { discoverTargets } from "./discovery.js";
+import { GitHubDiskCache } from "./disk-cache.js";
 import { describeGitHubError, EvidenceError } from "./errors.js";
 import {
   collectActionLockfile,
@@ -27,11 +28,16 @@ const commitSchema = z.object({
   }),
 });
 
-export function createGitHubProvider(options: ClientOptions): Provider {
+export function createGitHubProvider(
+  options: ClientOptions & { cacheDirectory?: string },
+): Provider {
   if (!options.token.trim()) {
     throw new FatalError("AUTHENTICATION", "A collection token is required.");
   }
   const api = new GitHubClient(options);
+  const cache = options.cacheDirectory
+    ? new GitHubDiskCache(options.cacheDirectory, options.token)
+    : undefined;
 
   const now = () => new Date((options.now ?? Date.now)()).toISOString();
 
@@ -94,7 +100,9 @@ export function createGitHubProvider(options: ClientOptions): Provider {
           commit: commit.sha,
           tree: commit.commit.tree.sha,
         },
+        options.concurrency,
         signal,
+        cache?.forRepository(resource.id),
       );
       for (const id of ids) {
         try {
