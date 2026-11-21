@@ -4,6 +4,9 @@ import type { GitHubClient } from "./client.js";
 import type { RepositoryDiskCache } from "./disk-cache.js";
 import { EvidenceError } from "./errors.js";
 
+// SHA-1 of the Git tree object with zero entries.
+const emptyTreeSha = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
 const treeSchema = z.object({
   truncated: z.boolean(),
   tree: z.array(
@@ -105,6 +108,7 @@ async function readTree(
     split: z.boolean(),
   });
   async function fetchSubtree(sha: string) {
+    if (sha === emptyTreeSha) return { tree: [], split: false };
     const key = `tree:${sha}`;
     if (cache) {
       const cached = subtreeSchema.safeParse(await cache.read(key));
