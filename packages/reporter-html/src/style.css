@@ -199,6 +199,21 @@ button {
   flex: 1;
   min-width: 0;
 }
+.repository-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.repository-toggle input {
+  margin: 0;
+  accent-color: var(--accent);
+}
 .repository-count {
   color: var(--muted);
   font-size: 0.8rem;

@@ -58,7 +58,10 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   if (!resource || !evaluation || !finding)
     throw new Error("Incomplete test report");
   resource.name = "org/api";
-  report.resources.push({ ...resource, id: "2", name: "org/web" });
+  report.resources.push(
+    { ...resource, id: "2", name: "org/web" },
+    { ...resource, id: "3", name: "org/infra" },
+  );
   report.evaluations.push({
     ...evaluation,
     resource: "github/repository/2",
@@ -66,12 +69,20 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
     status: "pass",
     findingIds: [],
   });
-  report.errors.push({
-    phase: "collection",
-    code: "TIMEOUT",
-    message: "Repository lookup timed out.",
-    resource: "github/repository/1",
-  });
+  report.errors.push(
+    {
+      phase: "collection",
+      code: "TIMEOUT",
+      message: "Repository lookup timed out.",
+      resource: "github/repository/1",
+    },
+    {
+      phase: "collection",
+      code: "ACCESS",
+      message: "Infra unavailable.",
+      resource: "github/repository/3",
+    },
+  );
   if (finding.location)
     finding.location.url = "https://github.com/org/api/blob/sha/file#L1";
   renderReport(report);
@@ -86,6 +97,9 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   expect(document.querySelector(".detail-pane h2")?.textContent).toBe(
     "All repositories",
   );
+  expect(button("org/web").parentElement?.hidden).toBe(true);
+  expect(button("org/infra").parentElement?.hidden).toBe(false);
+  expect(button("org/infra").textContent).toContain("Coverage gap");
   button("org/api").click();
   expect(document.querySelector(".detail-pane h2")?.textContent).toBe(
     "org/api",
@@ -116,6 +130,15 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   repositorySearch.value = "web";
   repositorySearch.dispatchEvent(new dom.window.Event("input"));
   expect(button("org/api").parentElement?.hidden).toBe(true);
+  expect(button("org/web").parentElement?.hidden).toBe(true);
+  expect(
+    document.querySelector(".repository-list .empty-state")?.textContent,
+  ).toBe("No matching repositories.");
+  const showAll = document.querySelector<HTMLInputElement>(
+    ".sidebar input[type=checkbox]",
+  );
+  if (!showAll) throw new Error("Missing repository toggle");
+  showAll.click();
   expect(button("org/web").parentElement?.hidden).toBe(false);
   button("org/web").click();
   expect(document.querySelector(".detail-pane h2")?.textContent).toBe(
@@ -125,8 +148,15 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   button("All evaluations").click();
   expect(document.querySelector("article")?.textContent).toContain("test/web");
   expect(document.querySelector("article")?.textContent).toContain("Passed");
-  button("All repositories").click();
+  showAll.click();
+  expect(button("org/web").parentElement?.hidden).toBe(true);
+  expect(button("All repositories").getAttribute("aria-pressed")).toBe("true");
   expect(document.querySelectorAll("article")).toHaveLength(3);
+
+  renderReport({ ...report, errors: [], evaluations: [] });
+  expect(
+    document.querySelector(".repository-list .empty-state")?.textContent,
+  ).toBe("No repositories need attention.");
   dom.window.close();
 });
 

@@ -77,7 +77,17 @@ export function renderReport(report: Report): void {
   const repositoryList = element("ul", "", "repository-list");
   const all = element("button", "All repositories", "repository-button");
   all.type = "button";
-  sidebar.append(repoHeading, repositorySearch.container, all, repositoryList);
+  const showAll = element("input");
+  showAll.type = "checkbox";
+  const showAllLabel = element("label", "", "repository-toggle");
+  showAllLabel.append(showAll, "Show repositories with no issues");
+  sidebar.append(
+    repoHeading,
+    repositorySearch.container,
+    all,
+    repositoryList,
+    showAllLabel,
+  );
 
   const pane = element("section", "", "detail-pane");
   const panel = element("div", "", "detail-header");
@@ -204,13 +214,15 @@ export function renderReport(report: Report): void {
     const button = element("button", "", "repository-button");
     button.type = "button";
     const label = element("span", repository.name);
-    button.append(
-      label,
-      element("span", String(repository.attention), "repository-count"),
-    );
+    button.append(label);
+    if (repository.attention) {
+      button.append(
+        element("span", String(repository.attention), "repository-count"),
+      );
+    }
     button.setAttribute(
       "aria-label",
-      `${repository.name}, ${repository.attention} evaluations need attention`,
+      `${repository.name}, ${repository.attention} evaluations need attention${repository.errors.length ? ", coverage gap" : ""}`,
     );
     if (repository.errors.length)
       button.append(badge("Coverage gap", "coverage"));
@@ -219,20 +231,39 @@ export function renderReport(report: Report): void {
     item.append(button);
     repositoryList.append(item);
   }
-  const emptySearch = element("li", "No matching repositories.", "empty-state");
-  emptySearch.hidden = repositories.size > 0;
+  const emptySearch = element("li", "", "empty-state");
   repositoryList.append(emptySearch);
-  repositorySearch.input.addEventListener("input", () => {
+  const needsReview = new Set(
+    [...repositories]
+      .filter(
+        ([, repository]) =>
+          repository.attention > 0 || repository.errors.length > 0,
+      )
+      .map(([id]) => id),
+  );
+  function updateRepositoryList() {
     const query = repositorySearch.input.value.trim().toLowerCase();
     let matches = 0;
     for (const [id, button] of buttons) {
-      const matchesQuery =
-        repositories.get(id)?.name.toLowerCase().includes(query) ?? false;
-      if (button.parentElement) button.parentElement.hidden = !matchesQuery;
-      if (matchesQuery) matches++;
+      const visible =
+        (showAll.checked || needsReview.has(id)) &&
+        repositories.get(id)?.name.toLowerCase().includes(query);
+      if (button.parentElement) button.parentElement.hidden = !visible;
+      if (visible) matches++;
     }
     emptySearch.hidden = matches > 0;
+    emptySearch.textContent =
+      query || showAll.checked
+        ? "No matching repositories."
+        : "No repositories need attention.";
+  }
+  repositorySearch.input.addEventListener("input", updateRepositoryList);
+  showAll.addEventListener("change", () => {
+    if (!showAll.checked && selected && !needsReview.has(selected))
+      showRepository();
+    updateRepositoryList();
   });
+  updateRepositoryList();
   all.addEventListener("click", () => showRepository());
   attention.addEventListener("click", () => {
     attentionOnly = true;

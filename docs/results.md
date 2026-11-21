@@ -2,7 +2,7 @@
 
 > First-release report and dashboard contract. The source implementation uses the internal Report interface in packages/sdk; no Action release exists yet.
 
-The static dashboard shows the latest published scan only. Use the repository sidebar to switch between all repositories and an individual repository. The detail pane opens on evaluations that need attention and offers an all-evaluations view, search, and rule, level, and severity filters. Expand a finding row to read its remediation and open its source location when available. History storage, scan diffs, and trends are excluded initially. Display run freshness, scope, coverage gaps, and partial status prominently before interpreting compliance.
+The static dashboard shows the latest published scan only. Use the repository sidebar to switch between all repositories and an individual repository. The sidebar initially lists repositories with violations, warnings, or coverage errors. Select **Show repositories with no issues** to include the rest. The detail pane opens on evaluations that need attention and offers an all-evaluations view, search, and rule, level, and severity filters. Expand a finding row to read its remediation and open its source location when available. History storage, scan diffs, and trends are excluded initially. Display run freshness, scope, coverage gaps, and partial status prominently before interpreting compliance.
 
 ## Evaluations and findings
 
