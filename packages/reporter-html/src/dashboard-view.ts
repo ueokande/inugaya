@@ -98,25 +98,57 @@ export function coveragePanel(
   return section;
 }
 
-function findingDetails(finding: Finding): HTMLElement {
+function findingDetails(findings: Finding[]): HTMLElement {
+  const [first] = findings;
   const block = element("div", "", "finding");
+  if (!first) return block;
   block.append(
-    element("p", finding.message, "finding-message"),
+    element("p", first.message, "finding-message"),
     element("h4", "Remediation"),
-    element("p", finding.remediation),
+    element("p", first.remediation),
   );
-  if (finding.location) {
-    const text = `${finding.location.path}:${finding.location.line}`;
-    if (finding.location.url?.startsWith("https://github.com/")) {
-      const link = element("a", text, "source-link");
-      link.href = finding.location.url;
-      link.rel = "noreferrer";
-      block.append(link);
-    } else {
-      block.append(element("span", text, "source-link"));
-    }
+
+  const files = new Map<string, NonNullable<Finding["location"]>[]>();
+  for (const { location } of findings) {
+    if (!location) continue;
+    const locations = files.get(location.path);
+    if (locations) locations.push(location);
+    else files.set(location.path, [location]);
   }
+  if (!files.size) return block;
+  const locations = element("ul", "", "finding-locations");
+  for (const [path, lines] of files) {
+    const file = element("li", "", "finding-file");
+    file.append(element("code", path, "finding-path"));
+    const links = element("span", "", "finding-lines");
+    for (const { line, url } of lines.sort((a, b) => a.line - b.line)) {
+      const label = String(line);
+      if (url?.startsWith("https://github.com/")) {
+        const link = element("a", label, "source-link");
+        link.href = url;
+        link.rel = "noreferrer";
+        link.setAttribute("aria-label", `${path}, line ${line}`);
+        links.append(link);
+      } else {
+        links.append(element("span", label, "source-line"));
+      }
+    }
+    file.append(links);
+    locations.append(file);
+  }
+  block.append(element("h4", "Locations", "locations-heading"), locations);
   return block;
+}
+
+function findingGroups(findings: Finding[]): HTMLElement[] {
+  const groups = new Map<string, Finding[]>();
+  for (const finding of findings) {
+    const key = JSON.stringify([finding.message, finding.remediation]);
+    const group = groups.get(key);
+    if (group) group.push(finding);
+    else groups.set(key, [finding]);
+  }
+  return Array.from(groups.values(), findingDetails);
 }
 
 export function evaluationRow(
@@ -155,7 +187,7 @@ export function evaluationRow(
   const row = element("article", "", "evaluation");
   if (findingsForRow.length) {
     const details = element("details");
-    details.append(heading, ...findingsForRow.map(findingDetails));
+    details.append(heading, ...findingGroups(findingsForRow));
     row.append(details);
   } else {
     row.append(heading);

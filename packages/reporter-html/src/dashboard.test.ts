@@ -129,3 +129,62 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   expect(document.querySelectorAll("article")).toHaveLength(3);
   dom.window.close();
 });
+
+test("groups identical finding text and lists each source line under its file", () => {
+  const dom = new JSDOM("<!doctype html><body></body>");
+  vi.stubGlobal("document", dom.window.document);
+  const report = structuredClone(dashboardReport) as Report;
+  const [evaluation] = report.evaluations;
+  const [finding] = report.findings;
+  if (!evaluation || !finding) throw new Error("Incomplete test report");
+
+  const location = (path: string, line: number) => ({
+    path,
+    line,
+    url: `https://github.com/org/api/blob/sha/${path}#L${line}`,
+  });
+  finding.location = location(".github/workflows/build.yml", 39);
+  const extra = [
+    {
+      ...finding,
+      id: "3",
+      location: location(".github/workflows/build.yml", 22),
+    },
+    {
+      ...finding,
+      id: "4",
+      location: location(".github/workflows/build.yml", 26),
+    },
+    {
+      ...finding,
+      id: "5",
+      location: location(".github/workflows/test.yml", 10),
+    },
+    { ...finding, id: "6", remediation: "Use another fix." },
+  ];
+  report.findings.push(...extra);
+  evaluation.findingIds.push(...extra.map(({ id }) => id));
+  renderReport(report);
+
+  const row = document.querySelector("article");
+  const groups = row?.querySelectorAll(".finding");
+  expect(groups).toHaveLength(2);
+  const grouped = groups?.[0];
+  expect(grouped?.querySelectorAll(".finding-message")).toHaveLength(1);
+  expect(grouped?.querySelectorAll(".finding-path")).toHaveLength(2);
+  const links = [...(grouped?.querySelectorAll("a") ?? [])];
+  expect(links.map((link) => link.textContent)).toEqual([
+    "22",
+    "26",
+    "39",
+    "10",
+  ]);
+  expect(links.map((link) => link.hash)).toEqual([
+    "#L22",
+    "#L26",
+    "#L39",
+    "#L10",
+  ]);
+  expect(groups?.[1]?.textContent).toContain("Use another fix.");
+  dom.window.close();
+});
