@@ -198,10 +198,28 @@ export function formatFailure(error: unknown): string {
   return "Inugaya failed. Check configuration, credentials, and output destinations. This run must not be published.";
 }
 
-export function formatReportError(error: Report["errors"][number]): string {
-  const context = [error.phase, error.resource, error.rule]
-    .filter(Boolean)
-    .join(" ");
+export function resourceDisplayName(
+  key: string,
+  resources: ReadonlyMap<string, { name: string }>,
+): string {
+  const name = resources.get(key)?.name;
+  if (name) return name;
+  const repository = /^github\/repository\/(.+)$/.exec(key)?.[1];
+  if (repository) {
+    return /^[\w.-]+\/[\w.-]+$/.test(repository)
+      ? repository
+      : "Unknown repository";
+  }
+  return key;
+}
+
+export function formatReportError(
+  error: Report["errors"][number],
+  resources: ReadonlyMap<string, { name: string }>,
+): string {
+  const resource =
+    error.resource && resourceDisplayName(error.resource, resources);
+  const context = [error.phase, resource, error.rule].filter(Boolean).join(" ");
   return `${context} [${error.code}]: ${error.message}`;
 }
 

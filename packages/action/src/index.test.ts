@@ -7,12 +7,20 @@ const report = {
   run: { id: "fixture", status: "partial" },
   scope: { evaluated: 1 },
   findings: [{ level: "error" }],
+  resources: [
+    {
+      provider: "github",
+      type: "repository",
+      id: "123456",
+      name: "example/repo",
+    },
+  ],
   errors: [
     {
       phase: "discovery",
       code: "GITHUB_404_HTTP",
       message: "GitHub returned HTTP 404.",
-      resource: "github/organization/example",
+      resource: "github/repository/123456",
     },
   ],
 } as Report;
@@ -59,7 +67,7 @@ test.each(["never", "violation", "error"])(
     expect(core.setOutput).toHaveBeenCalledWith("violation-count", 1);
     expect(core.summary.write).toHaveBeenCalledOnce();
     expect(core.warning).toHaveBeenCalledWith(
-      expect.stringContaining("GITHUB_404_HTTP"),
+      expect.stringContaining("example/repo [GITHUB_404_HTTP]"),
     );
     expect(core.setFailed).toHaveBeenCalledTimes(failOn === "never" ? 0 : 1);
   },

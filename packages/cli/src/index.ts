@@ -12,6 +12,7 @@ import {
   formatReportError,
   type Policy,
   type Report,
+  resourceKey,
   shouldFail,
 } from "@inugaya/sdk";
 
@@ -135,8 +136,13 @@ export async function run(
     dependencies.stdout(
       `Status: ${report.run.status}\nResources: ${report.scope.evaluated}; violations: ${counts.violations}; warnings: ${counts.warnings}; errors: ${report.errors.length}`,
     );
+    const resources = new Map(
+      report.resources.map((resource) => [resourceKey(resource), resource]),
+    );
     for (const error of report.errors) {
-      dependencies.stderr(formatReportError(error).replaceAll(token, "***"));
+      dependencies.stderr(
+        formatReportError(error, resources).replaceAll(token, "***"),
+      );
     }
     return shouldFail(report, failOn) ? 1 : 0;
   } catch (error) {

@@ -7,12 +7,20 @@ const report = {
   run: { status: "partial" },
   scope: { evaluated: 1 },
   findings: [{ level: "error" }],
+  resources: [
+    {
+      provider: "github",
+      type: "repository",
+      id: "123456",
+      name: "example/repo",
+    },
+  ],
   errors: [
     {
       phase: "discovery",
       code: "GITHUB_404_HTTP",
       message: "GitHub returned HTTP 404. Check the target and token access.",
-      resource: "github/organization/example",
+      resource: "github/repository/123456",
     },
   ],
 } as Report;
@@ -78,7 +86,7 @@ test.each([
       expect.stringContaining("Status: partial"),
     );
     expect(deps.stderr).toHaveBeenCalledWith(
-      expect.stringContaining("GITHUB_404_HTTP"),
+      expect.stringContaining("example/repo [GITHUB_404_HTTP]"),
     );
   },
 );
