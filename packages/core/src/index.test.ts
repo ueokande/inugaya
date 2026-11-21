@@ -233,21 +233,3 @@ test("logs each scan stage once in order", async () => {
     [`writing report 1/1 (${reporter.id})…`],
   ]);
 });
-
-test("reports a completed scan when the only target is confirmed not applicable during discovery", async () => {
-  const report = await run({
-    provider: {
-      ...provider,
-      discover: async () => ({
-        resources: [],
-        errors: [],
-        excluded: [],
-        notApplicable: ["org/repo"],
-      }),
-    },
-  });
-  expect(report.run.status).toBe("complete");
-  expect(report.scope.excluded).toEqual(["org/repo"]);
-  expect(report.errors).toEqual([]);
-  expect(shouldFail(report, "error")).toBe(false);
-});

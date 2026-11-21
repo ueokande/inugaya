@@ -55,11 +55,7 @@ export async function runScan(
     policy.targets,
     dependencies.signal,
   );
-  if (
-    !discovery.resources.length &&
-    !discovery.errors.length &&
-    !discovery.notApplicable?.length
-  ) {
+  if (!discovery.resources.length && !discovery.errors.length) {
     throw new FatalError("EMPTY_TARGETS", "No effective targets remain.", [
       "No repositories remain after discovery and filters. Check targets.orgs, targets.repos, exclusions, and includeArchived/includeForks.",
     ]);
@@ -78,7 +74,7 @@ export async function runScan(
     scope: {
       requested: policy.targets,
       discovered: discovery.resources.length,
-      excluded: [...discovery.excluded, ...(discovery.notApplicable ?? [])],
+      excluded: discovery.excluded,
       evaluated: 0,
       discoveryLimitedToAccessibleResources: true,
     },

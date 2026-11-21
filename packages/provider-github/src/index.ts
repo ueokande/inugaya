@@ -5,11 +5,10 @@ import {
   type Resource,
 } from "@inugaya/sdk";
 import { z } from "zod";
-import { type ClientOptions, GitHubClient } from "./client.js";
+import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
 import { collectDependencyUpdateConfig } from "./dependency-update-config.js";
 import { discoverTargets } from "./discovery.js";
 import { GitHubDiskCache } from "./disk-cache.js";
-import { isEmptyRepository } from "./empty-repository.js";
 import { describeGitHubError, EvidenceError } from "./errors.js";
 import {
   collectActionLockfile,
@@ -83,7 +82,7 @@ export function createGitHubProvider(
         );
         resource.metadata.scannedCommit = commit.sha;
       } catch (error) {
-        if (await isEmptyRepository(api, base, error, signal)) {
+        if (error instanceof ApiError && error.code === "EMPTY_REPOSITORY") {
           for (const id of ids) {
             result[id] = { state: "not-applicable", observedAt: now() };
           }

@@ -61,26 +61,6 @@ test("discovers more than 100 repositories with pagination, union deduplication,
   expect(request).toHaveBeenCalledTimes(2);
 });
 
-test("explicit empty targets are excluded only when the branch list confirms emptiness", async () => {
-  const provider = createGitHubProvider({
-    ...settings,
-    fetch: transport((path) => {
-      if (path === "/repos/org/empty/branches?per_page=1") return [];
-      return new Response("", { status: 404 });
-    }),
-  });
-  const result = await provider.discover({
-    ...targets,
-    orgs: [],
-    repos: ["org/empty", "org/inaccessible"],
-  });
-  expect(result.resources).toEqual([]);
-  expect(result.notApplicable).toEqual(["org/empty"]);
-  expect(result.errors).toMatchObject([
-    { code: "GITHUB_404_HTTP", resource: "github/repository/org/inaccessible" },
-  ]);
-});
-
 test("explicit targets have the same archive/fork filters; inaccessible targets leave coverage errors", async () => {
   const provider = createGitHubProvider({
     ...settings,
@@ -263,108 +243,45 @@ test.each([true, false])(
       await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
     ).resources;
     if (!resource) throw new Error("Missing fixture resource");
-    const ids = [
-      "github/action-references@1",
-      "github/actions-lockfile@1",
-      "github/renovate-config@1",
-      "github/dependabot-config@1",
-    ];
-    const evidence = await provider.collect(resource, ids);
-    for (const id of ids) {
-      expect(evidence[id]).toMatchObject(
-        empty
-          ? { state: "available" }
-          : { state: "unavailable", code: "GITHUB_404_HTTP" },
-      );
-    }
-    if (empty) {
-      expect(evidence["github/action-references@1"]).toMatchObject({
-        data: { references: [] },
-      });
-      expect(evidence["github/actions-lockfile@1"]).toMatchObject({
-        data: { lockfile: null },
-      });
-    }
+    const id = "github/action-references@1";
+    const evidence = await provider.collect(resource, [id]);
+    expect(evidence[id]).toMatchObject(
+      empty
+        ? { state: "available", data: { references: [] } }
+        : { state: "unavailable", code: "GITHUB_404_HTTP" },
+    );
     expect(fetch).toHaveBeenCalledTimes(empty ? 2 : 3);
   },
 );
 
-test.each([
-  { commitStatus: 409, branches: null, expected: "not-applicable" },
-  { commitStatus: 404, branches: [], expected: "not-applicable" },
-  { commitStatus: 404, branches: [{ name: "other" }], expected: "unavailable" },
-  { commitStatus: 404, branches: 404, commits: 404, expected: "unavailable" },
-  {
-    commitStatus: 404,
-    branches: 404,
-    commits: 409,
-    expected: "not-applicable",
-  },
-  { commitStatus: 404, branches: 401, expected: "fatal" },
-])(
-  "checks a missing default branch before classifying the scan ($commitStatus, $branches)",
-  async ({ commitStatus, branches, commits, expected }) => {
-    const fetch = vi.fn(
-      transport((path) => {
-        switch (path) {
-          case "/repos/org/repo-1":
-            return repository();
-          case "/repos/org/repo-1/commits/main":
-            return Response.json(
-              {
-                message:
-                  commitStatus === 409
-                    ? "Git Repository is empty."
-                    : "Not Found",
-              },
-              { status: commitStatus },
-            );
-          case "/repos/org/repo-1/commits?per_page=1":
-            return Response.json(
-              {
-                message:
-                  commits === 409 ? "Git Repository is empty." : "Not Found",
-              },
-              { status: commits ?? 404 },
-            );
-          case "/repos/org/repo-1/branches?per_page=1":
-            return typeof branches === "number"
-              ? new Response("", { status: branches })
-              : branches;
-          default:
-            throw new Error(`Unexpected request: ${path}`);
-        }
-      }),
-    );
-    const provider = createGitHubProvider({ ...settings, fetch });
-    const [resource] = (
-      await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
-    ).resources;
-    if (!resource) throw new Error("Missing fixture resource");
-    const ids = [
-      "github/action-references@1",
-      "github/actions-lockfile@1",
-      "github/renovate-config@1",
-      "github/dependabot-config@1",
-    ];
-    const result = provider.collect(resource, ids);
-    if (expected === "fatal") {
-      await expect(result).rejects.toMatchObject({ code: "AUTHENTICATION" });
-    } else {
-      const evidence = await result;
-      for (const id of ids) {
-        expect(evidence[id]).toMatchObject(
-          expected === "unavailable"
-            ? { state: expected, code: "GITHUB_404_HTTP" }
-            : { state: expected },
-        );
-      }
-    }
-    expect(fetch).toHaveBeenCalledTimes(
-      commitStatus === 409 ? 2 : branches === 404 ? 4 : 3,
-    );
-  },
-);
+test("confirmed empty Git repositories are not applicable despite a default branch name", async () => {
+  const provider = createGitHubProvider({
+    ...settings,
+    fetch: transport((path) =>
+      path.includes("/commits/")
+        ? Response.json(
+            { message: "Git Repository is empty." },
+            { status: 409 },
+          )
+        : repository(),
+    ),
+  });
+  const resource = (
+    await provider.discover({
+      ...targets,
+      orgs: [],
+      repos: ["org/repo-1"],
+    })
+  ).resources[0];
+  if (!resource) {
+    throw new Error("Missing fixture resource");
+  }
+  expect(
+    (await provider.collect(resource, ["github/action-references@1"]))[
+      "github/action-references@1"
+    ]?.state,
+  ).toBe("not-applicable");
+});
 
 test.each([403, 404, 429, 503])(
   "organization discovery explains HTTP %s without exposing response bodies",
@@ -484,6 +401,6 @@ test("case-insensitive duplicate inaccessible targets are requested and reported
     orgs: [],
     repos: ["org/missing", "ORG/MISSING"],
   });
-  expect(request).toHaveBeenCalledTimes(3);
+  expect(request).toHaveBeenCalledTimes(1);
   expect(result.errors).toHaveLength(1);
 });

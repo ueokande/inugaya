@@ -2,9 +2,7 @@ import { matchesPattern } from "@inugaya/core";
 import { type Discovery, FatalError, type TargetConfig } from "@inugaya/sdk";
 import { z } from "zod";
 import { ApiError, type GitHubClient } from "./client.js";
-import { isEmptyRepository } from "./empty-repository.js";
 import { describeGitHubError } from "./errors.js";
-import { repositoryPath } from "./repository-files.js";
 
 const repoSchema = z.object({
   id: z.number().int(),
@@ -87,18 +85,16 @@ export async function discoverTargets(
       result.excluded.push(name);
       continue;
     }
-    const base = repositoryPath(name);
     try {
-      addRepository(await api.get(base, signal));
+      addRepository(
+        await api.get(
+          `/repos/${name.split("/").map(encodeURIComponent).join("/")}`,
+          signal,
+        ),
+      );
     } catch (error) {
       if (error instanceof FatalError || signal?.aborted) {
         throw error;
-      }
-      if (await isEmptyRepository(api, base, error, signal)) {
-        // Discovery did not return an identity to attach evaluations to.
-        result.notApplicable ??= [];
-        result.notApplicable.push(name);
-        continue;
       }
       result.errors.push({
         phase: "discovery",
