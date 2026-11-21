@@ -224,34 +224,66 @@ test.each([false, true])(
   },
 );
 
-test("confirmed empty Git repositories are not applicable despite a default branch name", async () => {
-  const provider = createGitHubProvider({
-    ...settings,
-    fetch: transport((path) =>
-      path.includes("/commits/")
-        ? Response.json(
-            { message: "Git Repository is empty." },
-            { status: 409 },
-          )
-        : repository(),
-    ),
-  });
-  const resource = (
-    await provider.discover({
-      ...targets,
-      orgs: [],
-      repos: ["org/repo-1"],
-    })
-  ).resources[0];
-  if (!resource) {
-    throw new Error("Missing fixture resource");
-  }
-  expect(
-    (await provider.collect(resource, ["github/action-references@1"]))[
-      "github/action-references@1"
-    ]?.state,
-  ).toBe("not-applicable");
-});
+test.each([
+  { commitStatus: 409, branches: null, expected: "not-applicable" },
+  { commitStatus: 404, branches: [], expected: "not-applicable" },
+  { commitStatus: 404, branches: [{ name: "other" }], expected: "unavailable" },
+  { commitStatus: 404, branches: 404, expected: "unavailable" },
+  { commitStatus: 404, branches: 401, expected: "fatal" },
+])(
+  "checks a missing default branch before classifying the scan ($commitStatus, $branches)",
+  async ({ commitStatus, branches, expected }) => {
+    const fetch = vi.fn(
+      transport((path) => {
+        switch (path) {
+          case "/repos/org/repo-1":
+            return repository();
+          case "/repos/org/repo-1/commits/main":
+            return Response.json(
+              {
+                message:
+                  commitStatus === 409
+                    ? "Git Repository is empty."
+                    : "Not Found",
+              },
+              { status: commitStatus },
+            );
+          case "/repos/org/repo-1/branches?per_page=1":
+            return typeof branches === "number"
+              ? new Response("", { status: branches })
+              : branches;
+          default:
+            throw new Error(`Unexpected request: ${path}`);
+        }
+      }),
+    );
+    const provider = createGitHubProvider({ ...settings, fetch });
+    const [resource] = (
+      await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
+    ).resources;
+    if (!resource) throw new Error("Missing fixture resource");
+    const ids = [
+      "github/action-references@1",
+      "github/actions-lockfile@1",
+      "github/renovate-config@1",
+      "github/dependabot-config@1",
+    ];
+    const result = provider.collect(resource, ids);
+    if (expected === "fatal") {
+      await expect(result).rejects.toMatchObject({ code: "AUTHENTICATION" });
+    } else {
+      const evidence = await result;
+      for (const id of ids) {
+        expect(evidence[id]).toMatchObject(
+          expected === "unavailable"
+            ? { state: expected, code: "GITHUB_404_HTTP" }
+            : { state: expected },
+        );
+      }
+    }
+    expect(fetch).toHaveBeenCalledTimes(commitStatus === 409 ? 2 : 3);
+  },
+);
 
 test.each([403, 404, 429, 503])(
   "organization discovery explains HTTP %s without exposing response bodies",

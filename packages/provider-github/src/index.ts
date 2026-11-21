@@ -82,7 +82,7 @@ export function createGitHubProvider(
         );
         resource.metadata.scannedCommit = commit.sha;
       } catch (error) {
-        if (error instanceof ApiError && error.code === "EMPTY_REPOSITORY") {
+        if (await isEmptyRepository(api, base, error, signal)) {
           for (const id of ids) {
             result[id] = { state: "not-applicable", observedAt: now() };
           }
@@ -139,4 +139,30 @@ export function createGitHubProvider(
       return result;
     },
   };
+}
+
+const branchesSchema = z.array(z.object({ name: z.string().min(1) }));
+
+async function isEmptyRepository(
+  api: GitHubClient,
+  base: string,
+  commitError: unknown,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (!(commitError instanceof ApiError)) return false;
+  if (commitError.code === "EMPTY_REPOSITORY") return true;
+  if (commitError.status !== 404) return false;
+
+  // An empty repository can advertise a default branch that has no ref yet.
+  // Require an accessible, empty branch listing before treating it as such.
+  try {
+    const branches = branchesSchema.parse(
+      await api.get(`${base}/branches?per_page=1`, signal),
+    );
+    return branches.length === 0;
+  } catch (error) {
+    signal?.throwIfAborted();
+    if (error instanceof FatalError) throw error;
+    return error instanceof ApiError && error.code === "EMPTY_REPOSITORY";
+  }
 }
