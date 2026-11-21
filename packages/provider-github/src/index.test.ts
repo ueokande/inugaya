@@ -61,6 +61,26 @@ test("discovers more than 100 repositories with pagination, union deduplication,
   expect(request).toHaveBeenCalledTimes(2);
 });
 
+test("explicit empty targets are excluded only when the branch list confirms emptiness", async () => {
+  const provider = createGitHubProvider({
+    ...settings,
+    fetch: transport((path) => {
+      if (path === "/repos/org/empty/branches?per_page=1") return [];
+      return new Response("", { status: 404 });
+    }),
+  });
+  const result = await provider.discover({
+    ...targets,
+    orgs: [],
+    repos: ["org/empty", "org/inaccessible"],
+  });
+  expect(result.resources).toEqual([]);
+  expect(result.notApplicable).toEqual(["org/empty"]);
+  expect(result.errors).toMatchObject([
+    { code: "GITHUB_404_HTTP", resource: "github/repository/org/inaccessible" },
+  ]);
+});
+
 test("explicit targets have the same archive/fork filters; inaccessible targets leave coverage errors", async () => {
   const provider = createGitHubProvider({
     ...settings,
@@ -403,6 +423,6 @@ test("case-insensitive duplicate inaccessible targets are requested and reported
     orgs: [],
     repos: ["org/missing", "ORG/MISSING"],
   });
-  expect(request).toHaveBeenCalledTimes(1);
+  expect(request).toHaveBeenCalledTimes(2);
   expect(result.errors).toHaveLength(1);
 });

@@ -82,6 +82,7 @@ export interface ScanError {
 }
 
 export interface Discovery {
+  notApplicable?: string[];
   resources: Resource[];
   errors: ScanError[];
   excluded: string[];

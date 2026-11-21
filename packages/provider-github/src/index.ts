@@ -5,10 +5,11 @@ import {
   type Resource,
 } from "@inugaya/sdk";
 import { z } from "zod";
-import { ApiError, type ClientOptions, GitHubClient } from "./client.js";
+import { type ClientOptions, GitHubClient } from "./client.js";
 import { collectDependencyUpdateConfig } from "./dependency-update-config.js";
 import { discoverTargets } from "./discovery.js";
 import { GitHubDiskCache } from "./disk-cache.js";
+import { isEmptyRepository } from "./empty-repository.js";
 import { describeGitHubError, EvidenceError } from "./errors.js";
 import {
   collectActionLockfile,
@@ -139,30 +140,4 @@ export function createGitHubProvider(
       return result;
     },
   };
-}
-
-const branchesSchema = z.array(z.object({ name: z.string().min(1) }));
-
-async function isEmptyRepository(
-  api: GitHubClient,
-  base: string,
-  commitError: unknown,
-  signal?: AbortSignal,
-): Promise<boolean> {
-  if (!(commitError instanceof ApiError)) return false;
-  if (commitError.code === "EMPTY_REPOSITORY") return true;
-  if (commitError.status !== 404) return false;
-
-  // An empty repository can advertise a default branch that has no ref yet.
-  // Require an accessible, empty branch listing before treating it as such.
-  try {
-    const branches = branchesSchema.parse(
-      await api.get(`${base}/branches?per_page=1`, signal),
-    );
-    return branches.length === 0;
-  } catch (error) {
-    signal?.throwIfAborted();
-    if (error instanceof FatalError) throw error;
-    return error instanceof ApiError && error.code === "EMPTY_REPOSITORY";
-  }
 }
