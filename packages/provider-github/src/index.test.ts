@@ -244,6 +244,51 @@ test.each([false, true])(
   },
 );
 
+test.each([true, false])(
+  "only the known empty tree SHA can skip Git tree requests (%s)",
+  async (empty) => {
+    const fetch = vi.fn(
+      transport((path) => {
+        if (path === "/repos/org/repo-1/commits/main") {
+          const tree = empty ? "4b825dc642cb6eb9a060e54bf8d69288fbee4904" : sha;
+          return { sha, commit: { tree: { sha: tree } } };
+        }
+        if (path.includes("/git/trees/"))
+          return new Response("", { status: 404 });
+        return repository();
+      }),
+    );
+    const provider = createGitHubProvider({ ...settings, fetch });
+    const [resource] = (
+      await provider.discover({ ...targets, orgs: [], repos: ["org/repo-1"] })
+    ).resources;
+    if (!resource) throw new Error("Missing fixture resource");
+    const ids = [
+      "github/action-references@1",
+      "github/actions-lockfile@1",
+      "github/renovate-config@1",
+      "github/dependabot-config@1",
+    ];
+    const evidence = await provider.collect(resource, ids);
+    for (const id of ids) {
+      expect(evidence[id]).toMatchObject(
+        empty
+          ? { state: "available" }
+          : { state: "unavailable", code: "GITHUB_404_HTTP" },
+      );
+    }
+    if (empty) {
+      expect(evidence["github/action-references@1"]).toMatchObject({
+        data: { references: [] },
+      });
+      expect(evidence["github/actions-lockfile@1"]).toMatchObject({
+        data: { lockfile: null },
+      });
+    }
+    expect(fetch).toHaveBeenCalledTimes(empty ? 2 : 3);
+  },
+);
+
 test.each([
   { commitStatus: 409, branches: null, expected: "not-applicable" },
   { commitStatus: 404, branches: [], expected: "not-applicable" },
