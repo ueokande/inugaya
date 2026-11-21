@@ -130,7 +130,7 @@ test("switches repositories, scopes coverage, and lets owners reopen all evaluat
   dom.window.close();
 });
 
-test("groups identical finding text and lists each source line under its file", () => {
+test("groups identical finding text and lists each location as file and line", () => {
   const dom = new JSDOM("<!doctype html><body></body>");
   vi.stubGlobal("document", dom.window.document);
   const report = structuredClone(dashboardReport) as Report;
@@ -171,13 +171,13 @@ test("groups identical finding text and lists each source line under its file", 
   expect(groups).toHaveLength(2);
   const grouped = groups?.[0];
   expect(grouped?.querySelectorAll(".finding-message")).toHaveLength(1);
-  expect(grouped?.querySelectorAll(".finding-path")).toHaveLength(2);
+  expect(grouped?.querySelectorAll(".finding-locations li")).toHaveLength(4);
   const links = [...(grouped?.querySelectorAll("a") ?? [])];
   expect(links.map((link) => link.textContent)).toEqual([
-    "22",
-    "26",
-    "39",
-    "10",
+    ".github/workflows/build.yml:22",
+    ".github/workflows/build.yml:26",
+    ".github/workflows/build.yml:39",
+    ".github/workflows/test.yml:10",
   ]);
   expect(links.map((link) => link.hash)).toEqual([
     "#L22",

@@ -349,34 +349,12 @@ summary.evaluation-heading:hover {
   list-style: none;
   margin: 0.25rem 0 0;
   padding: 0;
-}
-.finding-file,
-.finding-lines {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem;
-}
-.finding-path,
-.source-link,
-.source-line {
   font:
     0.82rem / 1.5 ui-monospace,
     monospace;
 }
-.finding-path {
-  color: var(--muted);
-  margin-right: 0.25rem;
-}
-.source-link,
-.source-line {
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.3rem;
-  background: #edf1f7;
-}
 .source-link {
   color: var(--accent);
-  background: var(--accent-soft);
 }
 
 .badge {

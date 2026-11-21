@@ -108,33 +108,24 @@ function findingDetails(findings: Finding[]): HTMLElement {
     element("p", first.remediation),
   );
 
-  const files = new Map<string, NonNullable<Finding["location"]>[]>();
-  for (const { location } of findings) {
-    if (!location) continue;
-    const locations = files.get(location.path);
-    if (locations) locations.push(location);
-    else files.set(location.path, [location]);
-  }
-  if (!files.size) return block;
+  const sources = findings.flatMap(({ location }) =>
+    location ? [location] : [],
+  );
+  if (!sources.length) return block;
   const locations = element("ul", "", "finding-locations");
-  for (const [path, lines] of files) {
-    const file = element("li", "", "finding-file");
-    file.append(element("code", path, "finding-path"));
-    const links = element("span", "", "finding-lines");
-    for (const { line, url } of lines.sort((a, b) => a.line - b.line)) {
-      const label = String(line);
-      if (url?.startsWith("https://github.com/")) {
-        const link = element("a", label, "source-link");
-        link.href = url;
-        link.rel = "noreferrer";
-        link.setAttribute("aria-label", `${path}, line ${line}`);
-        links.append(link);
-      } else {
-        links.append(element("span", label, "source-line"));
-      }
+  sources.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
+  for (const { path, line, url } of sources) {
+    const item = element("li");
+    const label = `${path}:${line}`;
+    if (url?.startsWith("https://github.com/")) {
+      const link = element("a", label, "source-link");
+      link.href = url;
+      link.rel = "noreferrer";
+      item.append(link);
+    } else {
+      item.append(element("span", label));
     }
-    file.append(links);
-    locations.append(file);
+    locations.append(item);
   }
   block.append(element("h4", "Locations", "locations-heading"), locations);
   return block;
