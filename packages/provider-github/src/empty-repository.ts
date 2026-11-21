@@ -23,6 +23,19 @@ export async function isEmptyRepository(
   } catch (error) {
     signal?.throwIfAborted();
     if (error instanceof FatalError) throw error;
+    if (!(error instanceof ApiError)) return false;
+    if (error.code === "EMPTY_REPOSITORY") return true;
+    if (error.status !== 404) return false;
+  }
+
+  // The branch list may also return 404. The commit list can explicitly
+  // confirm an empty Git repository without resolving a branch name.
+  try {
+    await api.get(`${base}/commits?per_page=1`, signal);
+    return false;
+  } catch (error) {
+    signal?.throwIfAborted();
+    if (error instanceof FatalError) throw error;
     return error instanceof ApiError && error.code === "EMPTY_REPOSITORY";
   }
 }

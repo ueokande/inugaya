@@ -248,11 +248,17 @@ test.each([
   { commitStatus: 409, branches: null, expected: "not-applicable" },
   { commitStatus: 404, branches: [], expected: "not-applicable" },
   { commitStatus: 404, branches: [{ name: "other" }], expected: "unavailable" },
-  { commitStatus: 404, branches: 404, expected: "unavailable" },
+  { commitStatus: 404, branches: 404, commits: 404, expected: "unavailable" },
+  {
+    commitStatus: 404,
+    branches: 404,
+    commits: 409,
+    expected: "not-applicable",
+  },
   { commitStatus: 404, branches: 401, expected: "fatal" },
 ])(
   "checks a missing default branch before classifying the scan ($commitStatus, $branches)",
-  async ({ commitStatus, branches, expected }) => {
+  async ({ commitStatus, branches, commits, expected }) => {
     const fetch = vi.fn(
       transport((path) => {
         switch (path) {
@@ -267,6 +273,14 @@ test.each([
                     : "Not Found",
               },
               { status: commitStatus },
+            );
+          case "/repos/org/repo-1/commits?per_page=1":
+            return Response.json(
+              {
+                message:
+                  commits === 409 ? "Git Repository is empty." : "Not Found",
+              },
+              { status: commits ?? 404 },
             );
           case "/repos/org/repo-1/branches?per_page=1":
             return typeof branches === "number"
@@ -301,7 +315,9 @@ test.each([
         );
       }
     }
-    expect(fetch).toHaveBeenCalledTimes(commitStatus === 409 ? 2 : 3);
+    expect(fetch).toHaveBeenCalledTimes(
+      commitStatus === 409 ? 2 : branches === 404 ? 4 : 3,
+    );
   },
 );
 
@@ -423,6 +439,6 @@ test("case-insensitive duplicate inaccessible targets are requested and reported
     orgs: [],
     repos: ["org/missing", "ORG/MISSING"],
   });
-  expect(request).toHaveBeenCalledTimes(2);
+  expect(request).toHaveBeenCalledTimes(3);
   expect(result.errors).toHaveLength(1);
 });
