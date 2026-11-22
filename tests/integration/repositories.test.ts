@@ -126,7 +126,8 @@ test.each(cases)(
     );
     expect(new Set(blobs).size).toBe(blobs.length);
     if (profile === "sha-only") expect(blobs).toHaveLength(1);
-    if (repository === "duplicate-blobs") expect(blobs).toHaveLength(2);
+    if (profile === "lock") expect(blobs).toHaveLength(0);
+    if (repository === "duplicate-blobs") expect(blobs).toHaveLength(1);
     for (const filename of ["report/report.json", "site/data.json"]) {
       const content = await fsPromises.readFile(
         path.join(directory, filename),
@@ -189,8 +190,8 @@ test("file caches are shared by evidence collectors but reset for the next colle
   const blobs = fixture.requests.filter((request) =>
     request.includes("/git/blobs/"),
   );
-  expect(blobs).toHaveLength(4);
-  expect(new Set(blobs).size).toBe(2);
+  expect(blobs).toHaveLength(2);
+  expect(new Set(blobs).size).toBe(1);
 });
 
 test.skipIf(!process.getuid)(

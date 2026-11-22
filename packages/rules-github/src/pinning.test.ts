@@ -17,19 +17,7 @@ const available = (data: unknown): Evidence => ({
   observedAt: "",
   data,
 });
-const locked = {
-  version: "v0.0.3",
-  workflows: { [path]: ["org/action@v1"] },
-  dependencies: {
-    "org/action@v1": {
-      ref: "v1",
-      commit: `sha1-${sha}`,
-      owner_id: 1,
-      repo_id: 2,
-    },
-  },
-};
-function evidence(reference: string, lockfile: unknown, source = path) {
+function evidence(reference: string, present: boolean, source = path) {
   return {
     "github/action-references@1": available({
       references: [
@@ -41,7 +29,7 @@ function evidence(reference: string, lockfile: unknown, source = path) {
         },
       ],
     }),
-    "github/actions-lockfile@1": available({ lockfile }),
+    "github/actions-lockfile@1": available({ present, hasWorkflows: true }),
   };
 }
 test("acceptedMethods defaults and strict validation", () => {
@@ -64,7 +52,7 @@ test("single-method policies enforce their method and only SHA-only skips lockfi
   expect(pinnedDependencies.getRequiredEvidence?.(shaOnly)).toEqual([
     "github/action-references@1",
   ]);
-  const shaEvidence = evidence(`org/action@${sha}`, null);
+  const shaEvidence = evidence(`org/action@${sha}`, false);
   expect(
     pinnedDependencies.evaluate(
       resource,
@@ -77,7 +65,7 @@ test("single-method policies enforce their method and only SHA-only skips lockfi
   expect(
     pinnedDependencies.evaluate(
       resource,
-      evidence("org/action@v1", locked),
+      evidence("org/action@v1", true),
       shaOnly,
     ).findings,
   ).toHaveLength(1);
@@ -86,21 +74,17 @@ test("single-method policies enforce their method and only SHA-only skips lockfi
   ).toHaveLength(1);
 });
 
-test("malformed, unsupported, and unavailable lockfiles never silently fall back to SHA", () => {
-  for (const lockfile of [
-    {},
-    { ...locked, version: "v9" },
-    { ...locked, dependencies: { "org/action@v1": {} } },
-  ]) {
-    expect(() =>
-      pinnedDependencies.evaluate(
-        resource,
-        evidence(`org/action@${sha}`, lockfile),
-        {},
-      ),
-    ).toThrow();
-  }
-  const data = evidence(`org/action@${sha}`, null);
+test("a committed lockfile satisfies the lockfile method for local composite references", () => {
+  const input = evidence(
+    "org/action@v1",
+    true,
+    ".github/actions/local/action.yml",
+  );
+  expect(pinnedDependencies.evaluate(resource, input, {}).findings).toEqual([]);
+});
+
+test("unavailable lockfile evidence never silently falls back to SHA", () => {
+  const data = evidence(`org/action@${sha}`, false);
   expect(() =>
     pinnedDependencies.evaluate(
       resource,

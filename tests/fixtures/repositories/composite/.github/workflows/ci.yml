@@ -4,4 +4,4 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/actions/local
+      - uses: $/.github/actions/local

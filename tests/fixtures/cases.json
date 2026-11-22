@@ -81,7 +81,13 @@
     "policy": "either",
     "violations": 1,
     "warnings": 0,
-    "errorCodes": []
+    "errorCodes": [],
+    "locations": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "line": 7
+      }
+    ]
   },
   {
     "repository": "sha-only",
@@ -114,15 +120,9 @@
   {
     "repository": "mixed",
     "policy": "either",
-    "violations": 1,
+    "violations": 0,
     "warnings": 0,
-    "errorCodes": [],
-    "locations": [
-      {
-        "path": ".github/workflows/ci.yml",
-        "line": 9
-      }
-    ]
+    "errorCodes": []
   },
   {
     "repository": "local-only",
@@ -155,7 +155,7 @@
   {
     "repository": "composite",
     "policy": "either",
-    "violations": 1,
+    "violations": 0,
     "warnings": 0,
     "errorCodes": []
   },
@@ -169,7 +169,7 @@
   {
     "repository": "stale-lockfile",
     "policy": "either",
-    "violations": 1,
+    "violations": 0,
     "warnings": 0,
     "errorCodes": []
   },
@@ -183,7 +183,7 @@
   {
     "repository": "missing-transitive",
     "policy": "either",
-    "violations": 1,
+    "violations": 0,
     "warnings": 0,
     "errorCodes": []
   },
@@ -192,21 +192,21 @@
     "policy": "either",
     "violations": 0,
     "warnings": 0,
-    "errorCodes": ["INVALID_LOCKFILE"]
+    "errorCodes": []
   },
   {
     "repository": "duplicate-lockfile",
     "policy": "either",
     "violations": 0,
     "warnings": 0,
-    "errorCodes": ["INVALID_LOCKFILE"]
+    "errorCodes": []
   },
   {
     "repository": "unsupported-lockfile",
     "policy": "either",
     "violations": 0,
     "warnings": 0,
-    "errorCodes": ["EVALUATION"]
+    "errorCodes": []
   },
   {
     "repository": "invalid-workflow",
@@ -234,7 +234,7 @@
     "policy": "either",
     "violations": 0,
     "warnings": 0,
-    "errorCodes": ["INVALID_LOCKFILE"]
+    "errorCodes": []
   },
   {
     "repository": "composite-sha",

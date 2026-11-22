@@ -1,5 +1,4 @@
 import { FatalError } from "@inugaya/sdk";
-import { parseDocument } from "yaml";
 import { z } from "zod";
 import { ApiError, type GitHubClient } from "./client.js";
 import { EvidenceError } from "./errors.js";
@@ -97,27 +96,15 @@ export async function collectClassicProtection(
 
 export async function collectActionLockfile(
   files: RepositoryFiles,
-): Promise<{ lockfile: unknown }> {
-  const entry = (await files.entries()).find(
-    (item) => item.path === ".github/workflows/actions.lock",
-  );
-  if (!entry) return { lockfile: null };
-  const doc = parseDocument(await files.read(entry), { uniqueKeys: true });
-  if (doc.errors.length) {
-    throw new EvidenceError(
-      "INVALID_LOCKFILE",
-      "Invalid Actions lockfile YAML. Check syntax and duplicate keys.",
-    );
-  }
-  try {
-    const lockfile: unknown = doc.toJS({ maxAliasCount: 50 });
-    // An empty file is invalid evidence, not an absent lockfile.
-    if (lockfile === null || lockfile === undefined) throw new Error();
-    return { lockfile };
-  } catch {
-    throw new EvidenceError(
-      "INVALID_LOCKFILE",
-      "The Actions lockfile is empty or its YAML aliases could not be resolved.",
-    );
-  }
+): Promise<{ present: boolean; hasWorkflows: boolean }> {
+  const entries = await files.entries();
+  return {
+    present: entries.some(
+      (entry) =>
+        entry.path === ".github/workflows/actions.lock" &&
+        entry.type === "blob" &&
+        (entry.mode === "100644" || entry.mode === "100755"),
+    ),
+    hasWorkflows: entries.some((entry) => isWorkflowPath(entry.path)),
+  };
 }

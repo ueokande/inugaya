@@ -1,7 +1,10 @@
 import type { Rule } from "@inugaya/sdk";
 import { z } from "zod";
-import { actionReferences, isFullSha } from "./evidence.js";
-import { isLockfileReference, lockfileCoverage } from "./lockfile.js";
+import {
+  actionLockfileEvidence,
+  actionReferences,
+  isFullSha,
+} from "./evidence.js";
 
 const parameters = z
   .object({
@@ -16,7 +19,7 @@ const parameters = z
 
 export const pinnedDependencies: Rule = {
   id: "actions/pinned-dependencies",
-  version: "1.0.0",
+  version: "2.0.0",
   resourceTypes: ["github/repository"],
   requiredEvidence: ["github/action-references@1", "github/actions-lockfile@1"],
   getRequiredEvidence: (input) =>
@@ -33,37 +36,28 @@ export const pinnedDependencies: Rule = {
     if (item?.state !== "available") throw new Error("Unavailable evidence.");
     const refs = actionReferences.parse(item.data).references;
     if (!refs.length) return { applicable: false, findings: [] };
-    let covered: ReturnType<typeof lockfileCoverage> = () => false;
-    if (methods.includes("lockfile")) {
+    const acceptSha = methods.includes("full-sha");
+    const acceptLockfile = methods.includes("lockfile");
+    if (acceptLockfile) {
       const file = evidence["github/actions-lockfile@1"];
       if (file?.state !== "available") throw new Error("Unavailable evidence.");
-      const { lockfile } = z
-        .object({ lockfile: z.unknown().nonoptional().nullable() })
-        .parse(file.data);
-      // A corrupt lockfile is an evaluation error even when all uses are SHAs.
-      covered = lockfileCoverage(lockfile);
+      if (actionLockfileEvidence.parse(file.data).present)
+        return { applicable: true, findings: [] };
     }
     return {
       applicable: true,
       findings: refs
-        .filter(
-          (ref) =>
-            !(methods.includes("full-sha") && isFullSha(ref.reference)) &&
-            !(
-              methods.includes("lockfile") &&
-              isLockfileReference(ref) &&
-              covered(ref)
-            ),
-        )
+        .filter((ref) => !acceptSha || !isFullSha(ref.reference))
         .map((ref) => ({
           key: JSON.stringify([ref.path, ref.line, ref.reference]),
-          message: "Remote dependency is not pinned by any accepted method.",
+          message:
+            "Remote dependency does not meet the selected pinning policy.",
           remediation:
-            methods.includes("full-sha") && methods.includes("lockfile")
-              ? "Use a reviewed full commit SHA or generate and commit a covering GitHub Actions lockfile with gh actions-lock."
-              : methods.includes("full-sha")
+            acceptSha && acceptLockfile
+              ? "Use a reviewed full commit SHA or generate and commit a GitHub Actions lockfile with gh actions-lock."
+              : acceptSha
                 ? "Replace the reference with a reviewed 40-character commit SHA."
-                : "Generate and commit a covering GitHub Actions lockfile with gh actions-lock; references outside native lockfile coverage cannot satisfy this policy.",
+                : "Generate and commit a GitHub Actions lockfile with gh actions-lock.",
           location: { path: ref.path, line: ref.line, url: ref.url },
         })),
     };

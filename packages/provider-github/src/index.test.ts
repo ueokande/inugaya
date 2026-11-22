@@ -218,7 +218,7 @@ test.each([false, true])(
     expect(evidence["github/actions-lockfile@1"]).toMatchObject(
       truncated
         ? { state: "unavailable", code: "TRUNCATED_TREE" }
-        : { state: "available", data: { lockfile: null } },
+        : { state: "available", data: { present: false, hasWorkflows: false } },
     );
     expect(request).toHaveBeenCalledTimes(truncated ? 8 : 6);
   },
