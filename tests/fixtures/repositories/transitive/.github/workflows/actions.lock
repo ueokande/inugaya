@@ -2,7 +2,6 @@ version: v0.0.3
 workflows:
   .github/workflows/ci.yml:
     - actions/checkout@v6
-    - org/nested@v1
 dependencies:
   actions/checkout@v6:
     ref: v6

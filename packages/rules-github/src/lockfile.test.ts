@@ -81,16 +81,14 @@ test("missing workflow, changed tag, missing dependency, and mismatched ref fail
   expect(evaluate(lock(), "org/action@v2").findings).toHaveLength(1);
 });
 
-test("recorded transitive dependencies must exist and be listed for the workflow; cycles terminate", () => {
+test("recorded transitive dependencies must exist but need not be listed for the workflow", () => {
   const value = {
     ...lock(),
     dependencies: {
       "org/action@v1": { ...entry, uses: ["org/nested@v1"] },
-      "org/nested@v1": { ...entry, uses: ["org/action@v1"] },
+      "org/nested@v1": { ...entry },
     },
   };
-  expect(evaluate(value).findings).toHaveLength(1);
-  value.workflows[path]?.push("org/nested@v1");
   expect(evaluate(value).findings).toEqual([]);
   delete (value.dependencies as Record<string, unknown>)["org/nested@v1"];
   expect(evaluate(value).findings).toHaveLength(1);

@@ -125,7 +125,7 @@ export function lockfileCoverage(
       );
     });
     if (!roots.length) return false;
-    const covered = new Set(listed.map(identity));
+    // The workflow lists roots. Transitive pins are reached via dependencies[].uses.
     const visited = new Set<string>();
     const pending = [...roots];
     while (pending.length) {
@@ -133,7 +133,7 @@ export function lockfileCoverage(
       if (visited.has(key)) continue;
       visited.add(key);
       const entry = entries.get(key);
-      if (!entry || !covered.has(key)) return false;
+      if (!entry) return false;
       const keyRef = key.slice(key.indexOf("@") + 1);
       if (
         /^[a-f0-9]{40}$/.test(keyRef)
