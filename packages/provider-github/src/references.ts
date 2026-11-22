@@ -1,5 +1,6 @@
 import { LineCounter, parseDocument } from "yaml";
 import { EvidenceError } from "./errors.js";
+import { isWorkflowPath } from "./workflow-path.js";
 
 export interface ActionReference {
   reference: string;
@@ -118,7 +119,7 @@ export function collectReferences(
     });
   };
 
-  if (path.startsWith(".github/workflows/")) {
+  if (isWorkflowPath(path)) {
     const jobs = object.jobs;
     if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) {
       throw new EvidenceError(

@@ -5,6 +5,7 @@ import { ApiError, type GitHubClient } from "./client.js";
 import { EvidenceError } from "./errors.js";
 import { type ActionReference, collectReferences } from "./references.js";
 import { type RepositoryFiles, repositoryPath } from "./repository-files.js";
+import { isWorkflowPath } from "./workflow-path.js";
 
 const protectionSchema = z.object({
   required_pull_request_reviews: z
@@ -19,8 +20,7 @@ export async function collectActionReferences(
   const entries = await files.entries();
   const candidates = entries.filter(
     (entry) =>
-      /^[.]github\/workflows\/[^/]+[.]ya?ml$/.test(entry.path) ||
-      /(^|\/)action[.]ya?ml$/.test(entry.path),
+      isWorkflowPath(entry.path) || /(^|\/)action[.]ya?ml$/.test(entry.path),
   );
   const results = await Promise.allSettled(
     candidates.map(async (entry) => {
