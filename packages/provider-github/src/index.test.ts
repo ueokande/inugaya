@@ -146,7 +146,7 @@ test.each([false, true])(
               truncated,
               tree: [
                 {
-                  path: "nested/action.yml",
+                  path: "workflows/foo/action.yml",
                   sha: blob,
                   type: "blob",
                   mode: "100644",
@@ -158,7 +158,7 @@ test.each([false, true])(
               truncated: false,
               tree: [
                 {
-                  path: "nested",
+                  path: "workflows",
                   sha: nested,
                   type: "tree",
                   mode: "040000",
@@ -204,11 +204,11 @@ test.each([false, true])(
             data: {
               references: [
                 {
-                  path: ".github/nested/action.yml",
+                  path: ".github/workflows/foo/action.yml",
                   reference: "actions/checkout@v6",
                 },
                 {
-                  path: "mirror/nested/action.yml",
+                  path: "mirror/workflows/foo/action.yml",
                   reference: "actions/checkout@v6",
                 },
               ],

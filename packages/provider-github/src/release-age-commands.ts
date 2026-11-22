@@ -7,6 +7,7 @@ import {
   setting,
   updateConfigError,
 } from "./release-age-files.js";
+import { isWorkflowPath } from "./workflow-path.js";
 
 const ncuConfigs = [
   ".ncurc",
@@ -166,9 +167,7 @@ async function readInvocations(
       }
     }
   }
-  for (const name of files.paths.filter((name) =>
-    /^\.github\/workflows\/[^/]+\.ya?ml$/.test(name),
-  )) {
+  for (const name of files.paths.filter(isWorkflowPath)) {
     const workflow = await files.read(name, "yaml");
     if (!workflow) continue;
     for (const [jobName, value] of Object.entries(record(workflow.data.jobs))) {
