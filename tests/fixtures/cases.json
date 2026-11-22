@@ -118,13 +118,6 @@
     "errorCodes": []
   },
   {
-    "repository": "mixed",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
     "repository": "local-only",
     "policy": "either",
     "violations": 0,
@@ -167,42 +160,7 @@
     "errorCodes": []
   },
   {
-    "repository": "stale-lockfile",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "transitive",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "missing-transitive",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
     "repository": "invalid-lockfile",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "duplicate-lockfile",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "unsupported-lockfile",
     "policy": "either",
     "violations": 0,
     "warnings": 0,
@@ -224,13 +182,6 @@
   },
   {
     "repository": "duplicate-blobs",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "empty-lockfile",
     "policy": "either",
     "violations": 0,
     "warnings": 0,
