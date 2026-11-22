@@ -41,13 +41,9 @@ rules:
   actions/lockfile: {}
 ```
 
-Require remote workflow Actions to be covered by the native GitHub Actions dependency lockfile at `.github/workflows/actions.lock`, collected at the same default-branch commit as the workflows. This rule supports the `v0.0.3` format on github.com. Maintain it with the official [gh actions-lock](https://github.com/github/gh-actions-lock) extension; review and commit the lockfile together with workflow changes.
+Require a regular file at `.github/workflows/actions.lock` on the default branch of repositories with GitHub Actions workflows. This rule checks the Git tree and skips repositories without workflows. A missing file fails even when every reference is a full SHA. An incomplete or unreadable Git tree produces a collection error.
 
-A missing lockfile fails even when `uses` contains a full SHA. Each Action must be listed for its workflow and have a dependency entry containing a SHA-1 commit digest, positive owner/repository IDs, and a matching tag or branch ref. Sub-action paths resolve to their repository pin; owner/repository case is ignored while tag and branch case is preserved. A full-SHA `uses` can also match a tag-keyed entry recording that commit. All transitive dependencies declared by `uses` in the lockfile must have entries and be included in the workflow's flat dependency list. Missing coverage produces findings at the original workflow references. Invalid YAML, duplicate keys, unsupported versions or hosts, malformed entries, unreadable files, and incomplete repository trees produce errors, not passes.
-
-This is an offline coverage and recorded-graph check. It does not fetch remote manifests to discover omitted transitive dependencies, authenticate repository IDs, verify commit existence or upstream provenance, or prove that native enforcement ran. Use `gh actions-lock --verify` and GitHub's runtime validation for those guarantees. Remote reusable workflows, standalone local composite Action manifests, local `./` and `$/` references, and Docker images are outside this rule's coverage. No relevant remote workflow Actions yields `not-applicable`.
-
-Select this rule independently of `actions/full-sha`. A locked tag can pass `actions/lockfile` while failing `actions/full-sha`; enabling both requires both policies to hold.
+The presence check does not download or parse the lockfile, verify that a workflow or dependency is listed, or check GitHub enforcement settings. Generate and maintain the file with [gh actions-lock](https://github.com/github/gh-actions-lock). GitHub validates onboarded workflows at runtime. Use GitHub's **Require lockfile** policy to block targeted workflows that have not been onboarded.
 
 ## `actions/pinned-dependencies`
 
@@ -59,15 +55,13 @@ Select this rule independently of `actions/full-sha`. A locked tag can pass `act
 | Parameter        | `acceptedMethods`: distinct nonempty list of `full-sha` and/or `lockfile`; defaults to both. |
 | Required access  | Contents read for default-branch files.                                                      |
 
-Require each remote Action or reusable workflow reference to satisfy at least one accepted pinning method. `full-sha` uses the same textual check as `actions/full-sha`; `lockfile` uses the same recorded-graph coverage check as `actions/lockfile`. The rule evaluates evidence directly; it does not depend on the other rules being enabled.
+Accept either full-SHA references or a committed GitHub Actions lockfile according to `acceptedMethods`. The `full-sha` method checks each remote reference. The `lockfile` method checks file presence at the repository level, including when a reference is found in a local composite Action. A passing presence check does not verify that GitHub locks each detected reference. GitHub workflow lockfiles do not pin calls to reusable workflows.
 
-With both methods accepted, a locked tag passes without requiring a SHA in `uses`. A SHA without lockfile coverage also passes. Uncovered references produce findings with source locations. Local `./` and `$/` references and Docker images remain outside the check. Remote reusable workflows and references in local composite manifests cannot satisfy the lockfile method; they require a full SHA when that method is accepted, or fail when only `lockfile` is accepted. No remote references yields `not-applicable`.
-
-A missing lockfile means that method does not cover any references; full-SHA references can still pass. A malformed or unsupported lockfile, or required evidence that cannot be collected, produces an error rather than silently falling back to SHA. A SHA-only `acceptedMethods` configuration neither requests nor validates lockfile evidence. Lockfile provenance and omitted remote transitive dependencies remain outside the offline check described above.
+When a selected lockfile method finds no file, the rule checks full SHAs if that method is allowed. Findings link to the noncompliant references. A SHA-only configuration skips lockfile evidence. A repository with no remote references is `not-applicable`.
 
 ## Pinning policy examples
 
-Rule `level` controls enforcement independently of risk `severity`. It defaults to `error`. These examples apply to remote Actions covered by both methods; the scope limitations above still apply.
+Rule `level` controls enforcement independently of risk `severity`. It defaults to `error`. These examples apply to repositories with workflows that use remote Actions.
 
 Require full-SHA references regardless of lockfile coverage:
 
@@ -77,7 +71,7 @@ rules:
     level: error
 ```
 
-Require native lockfile coverage regardless of full-SHA references:
+Require a lockfile regardless of full-SHA references:
 
 ```yaml
 rules:
@@ -107,12 +101,12 @@ rules:
     level: warn
 ```
 
-| Reference protection | SHA required  | Lockfile required | Either accepted | Migration                  |
-| -------------------- | ------------- | ----------------- | --------------- | -------------------------- |
-| SHA only             | Pass          | Error finding     | Pass            | Warning finding            |
-| Lockfile only        | Error finding | Pass              | Pass            | Pass                       |
-| Both                 | Pass          | Pass              | Pass            | Pass                       |
-| Neither              | Error finding | Error finding     | Error finding   | Error and warning findings |
+| Repository policy | SHA required  | Lockfile required | Either accepted | Migration                  |
+| ----------------- | ------------- | ----------------- | --------------- | -------------------------- |
+| SHA only          | Pass          | Error finding     | Pass            | Warning finding            |
+| Lockfile only     | Error finding | Pass              | Pass            | Pass                       |
+| Both              | Pass          | Pass              | Pass            | Pass                       |
+| Neither           | Error finding | Error finding     | Error finding   | Error and warning findings |
 
 Under `fail-on: violation`, warning findings alone do not fail the Action or CLI; error findings do. Independent rules retain both findings when neither protection is present. Enabling `actions/full-sha` alongside the combined rule still requires literal full-SHA references; the combined rule does not override it.
 

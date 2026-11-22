@@ -3,12 +3,9 @@ import { createGitHubProvider } from "./index.js";
 
 const sha = "a".repeat(40);
 async function collect(
-  source: string | null,
+  mode?: string,
   options: {
     truncated?: boolean;
-    mode?: string;
-    denied?: boolean;
-    size?: number;
   } = {},
 ) {
   const paths: string[] = [];
@@ -26,23 +23,18 @@ async function collect(
         return Response.json({
           truncated: options.truncated ?? false,
           tree:
-            source === null
+            mode === undefined
               ? []
               : [
                   {
                     path: ".github/workflows/actions.lock",
                     type: "blob",
-                    mode: options.mode ?? "100644",
+                    mode,
                     sha,
                   },
                 ],
         });
-      if (options.denied) return new Response("", { status: 403 });
-      return Response.json({
-        encoding: "base64",
-        content: Buffer.from(source ?? "").toString("base64"),
-        size: options.size ?? source?.length ?? 0,
-      });
+      throw new Error(`Unexpected request: ${path}`);
     },
   });
   const resource = {
@@ -59,33 +51,25 @@ async function collect(
   return { evidence: result["github/actions-lockfile@1"], paths };
 }
 
-test("collects parsed lockfile from the resolved commit tree", async () => {
-  const { evidence, paths } = await collect(
-    "version: v0.0.3\nworkflows: {}\ndependencies: {}\n",
-  );
-  expect(evidence?.state).toBe("available");
-  if (evidence?.state === "available")
-    expect(evidence.data).toEqual({
-      lockfile: { version: "v0.0.3", workflows: {}, dependencies: {} },
-    });
-  expect(paths).toContain(`/repos/org/repo/git/trees/${sha}`);
-  expect(paths).toContain(`/repos/org/repo/git/blobs/${sha}`);
-});
+test.each([
+  ["100644", true],
+  ["100755", true],
+  ["120000", false],
+  [undefined, false],
+] as const)(
+  "checks the commit tree without downloading the lockfile (mode %s)",
+  async (mode, present) => {
+    const { evidence, paths } = await collect(mode);
+    expect(evidence).toMatchObject({ state: "available", data: { present } });
+    expect(paths).toEqual([
+      "/repos/org/repo/commits/main",
+      `/repos/org/repo/git/trees/${sha}`,
+    ]);
+  },
+);
 
 test("only complete readable trees establish absence", async () => {
-  const { evidence } = await collect(null);
-  expect(evidence?.state === "available" && evidence.data).toEqual({
-    lockfile: null,
-  });
-  expect((await collect(null, { truncated: true })).evidence?.state).toBe(
+  expect((await collect(undefined, { truncated: true })).evidence?.state).toBe(
     "unavailable",
   );
-});
-
-test.each([
-  ["version: v0.0.3", { mode: "120000" }],
-  ["version: v0.0.3", { size: 1_048_577 }],
-  ["version: v0.0.3", { denied: true }],
-] as const)("unreadable lockfiles are unavailable", async (source, options) => {
-  expect((await collect(source, options)).evidence?.state).toBe("unavailable");
 });

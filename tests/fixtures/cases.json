@@ -81,7 +81,13 @@
     "policy": "either",
     "violations": 1,
     "warnings": 0,
-    "errorCodes": []
+    "errorCodes": [],
+    "locations": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "line": 7
+      }
+    ]
   },
   {
     "repository": "sha-only",
@@ -110,19 +116,6 @@
     "violations": 1,
     "warnings": 1,
     "errorCodes": []
-  },
-  {
-    "repository": "mixed",
-    "policy": "either",
-    "violations": 1,
-    "warnings": 0,
-    "errorCodes": [],
-    "locations": [
-      {
-        "path": ".github/workflows/ci.yml",
-        "line": 9
-      }
-    ]
   },
   {
     "repository": "local-only",
@@ -155,7 +148,7 @@
   {
     "repository": "composite",
     "policy": "either",
-    "violations": 1,
+    "violations": 0,
     "warnings": 0,
     "errorCodes": []
   },
@@ -167,46 +160,11 @@
     "errorCodes": []
   },
   {
-    "repository": "stale-lockfile",
-    "policy": "either",
-    "violations": 1,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "transitive",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
-    "repository": "missing-transitive",
-    "policy": "either",
-    "violations": 1,
-    "warnings": 0,
-    "errorCodes": []
-  },
-  {
     "repository": "invalid-lockfile",
     "policy": "either",
     "violations": 0,
     "warnings": 0,
-    "errorCodes": ["INVALID_LOCKFILE"]
-  },
-  {
-    "repository": "duplicate-lockfile",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": ["INVALID_LOCKFILE"]
-  },
-  {
-    "repository": "unsupported-lockfile",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": ["EVALUATION"]
+    "errorCodes": []
   },
   {
     "repository": "invalid-workflow",
@@ -228,13 +186,6 @@
     "violations": 0,
     "warnings": 0,
     "errorCodes": []
-  },
-  {
-    "repository": "empty-lockfile",
-    "policy": "either",
-    "violations": 0,
-    "warnings": 0,
-    "errorCodes": ["INVALID_LOCKFILE"]
   },
   {
     "repository": "composite-sha",
