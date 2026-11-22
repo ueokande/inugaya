@@ -19,7 +19,7 @@ const parameters = z
 
 export const pinnedDependencies: Rule = {
   id: "actions/pinned-dependencies",
-  version: "2.0.0",
+  version: "1.0.0",
   resourceTypes: ["github/repository"],
   requiredEvidence: ["github/action-references@1", "github/actions-lockfile@1"],
   getRequiredEvidence: (input) =>

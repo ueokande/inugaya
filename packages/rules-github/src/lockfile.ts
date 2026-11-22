@@ -4,7 +4,7 @@ import { actionLockfileEvidence } from "./evidence.js";
 
 export const actionsLockfile: Rule = {
   id: "actions/lockfile",
-  version: "2.0.0",
+  version: "1.0.0",
   resourceTypes: ["github/repository"],
   requiredEvidence: ["github/actions-lockfile@1"],
   defaultSeverity: "high",

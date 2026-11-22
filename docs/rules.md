@@ -30,7 +30,7 @@ Central policy ignores target suppression comments. Workflow lockfiles do not sa
 
 | Property         | Contract                                                           |
 | ---------------- | ------------------------------------------------------------------ |
-| Version          | Implementation rule version `2.0.0`; no Action release exists yet. |
+| Version          | Implementation rule version `1.0.0`; no Action release exists yet. |
 | Resource type    | `github/repository`                                                |
 | Default severity | `high`                                                             |
 | Parameters       | None                                                               |
@@ -49,7 +49,7 @@ The presence check does not download or parse the lockfile, verify that a workfl
 
 | Property         | Contract                                                                                     |
 | ---------------- | -------------------------------------------------------------------------------------------- |
-| Version          | Implementation rule version `2.0.0`; no Action release exists yet.                           |
+| Version          | Implementation rule version `1.0.0`; no Action release exists yet.                           |
 | Resource type    | `github/repository`                                                                          |
 | Default severity | `high`                                                                                       |
 | Parameter        | `acceptedMethods`: distinct nonempty list of `full-sha` and/or `lockfile`; defaults to both. |
